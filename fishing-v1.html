@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<!--
+  十投一会 〜大漁ビルド〜  v1
+  ------------------------------------------------------------
+  v1でやったこと（最小プロトタイプ）
+  - ワンボタン操作：押した瞬間に横位置ロック → 押しっぱなしでルアー降下 → 離して確定
+  - 捕獲範囲は降下中ずっと画面に描画（狙いが見える＝クレーンゲームの感覚）
+  - 魚5ランク／深度で分布／ランク4-5はルアーから逃げる
+  - 全10投、スコアアタック。所持金でパワーアップ、貯めるほどレア率UP
+  - パワーアップ3択（ノーマル/レア/レジェンド/トレードオフ）
+  - シナジー6種：条件を満たすと自動発動して告知
+  - 宝箱：+1投／即パワーアップ／魚群到来／小判（効果は「次の1投に確定適用」型）
+  - 範囲拡大は Lv6 で上限。上限後は選択肢から消え、代わりに別系統が回ってくる
+-->
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>十投一会 〜大漁ビルド〜 v1</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body {
+    width:100%; height:100%; overflow:hidden;
+    background:#05121f; font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    color:#fff; user-select:none; touch-action:none;
+  }
+  /* flexのcenterは中身がはみ出すと左端が切れるので、transformで自前に中央寄せする */
+  #wrap  { position:fixed; inset:0; overflow:hidden; }
+  #stage { position:absolute; left:0; top:0; width:480px; height:800px; transform-origin:top left; }
+  canvas { position:absolute; inset:0; width:480px; height:800px; border-radius:14px; }
+
+  .ov { position:absolute; }
+
+  /* パワーアップボタン */
+  #puBtn {
+    left:296px; top:706px; width:172px; height:78px; border-radius:14px;
+    background:#1b3346; border:2px solid #2c4d68; color:#5c7a92;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    font-size:15px; font-weight:bold; letter-spacing:1px; transition:.15s;
+  }
+  #puBtn.ready {
+    background:linear-gradient(180deg,#ffd76a,#f2a63b); border-color:#fff3c4; color:#4a2c00;
+    box-shadow:0 0 22px rgba(255,200,80,.75); animation:pulse 1.1s infinite;
+  }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.045)} }
+  #puGauge { width:140px; height:7px; background:#0d2033; border-radius:4px; margin-top:7px; overflow:hidden; position:relative; }
+  #puFill { height:100%; width:0%; background:#4fd1ff; transition:width .25s; }
+  .tick { position:absolute; top:0; width:2px; height:100%; background:rgba(255,255,255,.55); }
+  #puSub { font-size:10px; margin-top:4px; opacity:.85; font-weight:normal; }
+
+  /* パワーアップ選択モーダル */
+  #modal {
+    inset:0; background:rgba(3,12,22,.93); display:none;
+    flex-direction:column; align-items:center; justify-content:center; gap:12px; border-radius:14px;
+  }
+  #modal.show { display:flex; }
+  #modalTtl { font-size:21px; font-weight:bold; letter-spacing:2px; }
+  #modalSub { font-size:12px; opacity:.7; margin-bottom:4px; }
+  .card {
+    width:400px; padding:13px 15px; border-radius:13px; border:2px solid;
+    background:#0f2436; display:flex; align-items:center; gap:12px; transition:.12s;
+  }
+  .card:active { transform:scale(.97); }
+  .card .ic { font-size:29px; width:40px; text-align:center; }
+  .card .tx { flex:1; }
+  .card .nm { font-size:17px; font-weight:bold; margin-bottom:3px; }
+  .card .ds { font-size:12px; opacity:.82; line-height:1.35; }
+  .card .lv { font-size:10px; opacity:.6; margin-top:3px; }
+  .card .syn { font-size:12px; font-weight:bold; color:#e8b4ff; margin-top:4px; }
+  #synHint { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:10px; }
+  #synHint span { font-size:10px; padding:3px 8px; border-radius:8px;
+    background:rgba(232,180,255,.12); color:#d6a8ea; }
+  #synHint b { margin-left:5px; color:#fff; opacity:.85; }
+  #cards { display:flex; flex-direction:column; gap:10px; align-items:center; }
+  .r-n { border-color:#4b9c5e; } .r-n .nm { color:#8fe0a0; }
+  .r-r { border-color:#3d84d8; box-shadow:0 0 14px rgba(61,132,216,.35);} .r-r .nm { color:#8bc4ff; }
+  .r-l { border-color:#f0c14b; box-shadow:0 0 20px rgba(240,193,75,.5);} .r-l .nm { color:#ffdc7a; }
+  .r-t { border-color:#b76ad8; box-shadow:0 0 14px rgba(183,106,216,.35);} .r-t .nm { color:#e0a5f5; }
+  .badge { font-size:10px; padding:2px 7px; border-radius:8px; background:rgba(255,255,255,.13); }
+
+  /* シナジー告知 */
+  #synPop {
+    left:0; right:0; top:250px; text-align:center; pointer-events:none; opacity:0;
+  }
+  #synPop .box {
+    display:inline-block; padding:12px 24px; border-radius:14px;
+    background:linear-gradient(135deg,#7a3fd8,#c94fa8); border:2px solid #ffb3ec;
+    box-shadow:0 0 30px rgba(220,90,200,.6);
+  }
+  #synPop .t { font-size:12px; letter-spacing:3px; opacity:.9; }
+  #synPop .n { font-size:24px; font-weight:bold; margin:2px 0 4px; }
+  #synPop .d { font-size:12px; opacity:.92; }
+
+  /* タイトル・リザルト */
+  #screen {
+    inset:0; background:rgba(3,12,22,.94); display:flex;
+    flex-direction:column; align-items:center; justify-content:center; gap:14px; border-radius:14px; text-align:center;
+  }
+  #screen.hide { display:none; }
+  #scTtl { font-size:36px; font-weight:bold; letter-spacing:4px; }
+  #scTtl small { display:block; font-size:14px; letter-spacing:5px; opacity:.65; margin-top:6px; }
+  #scBody { font-size:14px; line-height:1.9; opacity:.9; }
+  #scBtn {
+    margin-top:8px; padding:15px 46px; border-radius:40px; font-size:19px; font-weight:bold;
+    background:linear-gradient(180deg,#4fd1ff,#2b8fd0); color:#022; border:none;
+    box-shadow:0 0 24px rgba(79,209,255,.5);
+  }
+  #scBtn:active { transform:scale(.96); }
+  .hs { font-size:13px; opacity:.75; }
+  #buildList { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; max-width:420px; }
+  #buildList span { font-size:11px; padding:3px 9px; border-radius:9px; background:rgba(255,255,255,.1); }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="stage">
+    <canvas id="cv" width="480" height="800"></canvas>
+
+    <div class="ov" id="puBtn">
+      <div id="puLbl">パワーアップ</div>
+      <div id="puGauge"><div id="puFill"></div></div>
+      <div id="puSub">あと ¥0</div>
+    </div>
+
+    <div class="ov" id="modal">
+      <div id="modalTtl">パワーアップ</div>
+      <div id="modalSub"></div>
+      <div id="cards"></div>
+    </div>
+
+    <div class="ov" id="synPop"><div class="box">
+      <div class="t">S Y N E R G Y</div><div class="n"></div><div class="d"></div>
+    </div></div>
+
+    <div class="ov" id="screen">
+      <div id="scTtl">十投一会<small>〜 大 漁 ビ ル ド 〜</small></div>
+      <div id="scBody"></div>
+      <div id="buildList"></div>
+      <button id="scBtn">はじめる</button>
+      <div class="hs" id="hsTxt"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   定数
+   ============================================================ */
+const W = 480, H = 800;
+const RAIL_Y   = 116;              // カーソルのレール
+const WATER_T  = 140, WATER_B = 690;
+const WATER_L  = 12,  WATER_R  = 468;
+const WATER_H  = WATER_B - WATER_T;
+
+const BASE_R      = 62;            // 基礎捕獲半径
+const R_PER_LV    = 19;
+const R_MAX_LV    = 6;             // ★範囲上限（62+114=176 / 直径352。画面幅の約3/4）
+const BASE_FISH   = 95;
+const BASE_CHEST  = 3;
+const MONEY_RATE  = 0.6;           // スコア→お金の変換率
+const CASTS       = 10;
+const CURSOR_SPD  = 330;           // px/s
+const DROP_SPD    = 300;           // px/s
+
+const RANKS = [
+  { n:'イワシ',  c:'#a8dcea', s:9,  sc:10,  sp:38, school:1.0, flee:0 },
+  { n:'アジ',    c:'#93da86', s:12, sc:26,  sp:34, school:0.7, flee:0 },
+  { n:'タイ',    c:'#f28d8d', s:16, sc:65,  sp:28, school:0.35,flee:0 },
+  { n:'ブリ',    c:'#7aa6ef', s:21, sc:160, sp:48, school:0.15,flee:1 },
+  { n:'マグロ',  c:'#f5c85a', s:28, sc:420, sp:60, school:0,   flee:1 },
+];
+const DEPTH_PREF = [0.10, 0.27, 0.47, 0.68, 0.87];
+
+/* ============================================================
+   パワーアップ定義
+   rar: n=ノーマル r=レア l=レジェンド t=トレードオフ
+   ============================================================ */
+// tg = ビルドタグ（面/線/誘/富）。シナジーは個別カードではなくタグ数で成立する
+const TAGNAME = { AREA:'面', LINE:'線', LURE:'誘', RICH:'富' };
+const TAGCOL  = { AREA:'#4fd1ff', LINE:'#ffa74f', LURE:'#ff8fd0', RICH:'#ffd76a' };
+const UPGRADES = [
+  // --- ノーマル：面制圧系 ---
+  { id:'radius', rar:'n', tg:'AREA', ic:'🌊', nm:'広がる波紋', max:R_MAX_LV,
+    ds:s=>`釣れる円が広がる（+${R_PER_LV}）`, ap:s=>s.radiusLvl++, lv:s=>s.radiusLvl },
+  { id:'fish',   rar:'n', tg:'AREA', ic:'🐟', nm:'豊漁の海', max:5,
+    ds:s=>'海の魚が12匹増える', ap:s=>s.fishLvl++, lv:s=>s.fishLvl },
+  // --- ノーマル：狙撃系 ---
+  { id:'pull',   rar:'n', tg:'LURE', ic:'🧲', nm:'魔性の香り', max:4,
+    ds:s=>'範囲の外から1匹引き寄せる', ap:s=>s.pullN++, lv:s=>s.pullN },
+  { id:'hline',  rar:'n', tg:'LINE', ic:'↔️', nm:'横薙ぎの糸', max:3,
+    ds:s=>s.hlineLvl?'横一直線の帯が太くなる':'横一直線に細く釣れる', ap:s=>s.hlineLvl++, lv:s=>s.hlineLvl },
+  { id:'vline',  rar:'n', tg:'LINE', ic:'↕️', nm:'縦落としの糸', max:3,
+    ds:s=>s.vlineLvl?'縦一直線の帯が太くなる':'縦一直線に細く釣れる', ap:s=>s.vlineLvl++, lv:s=>s.vlineLvl },
+  // --- ノーマル：質・宝箱系 ---
+  { id:'score',  rar:'n', tg:'RICH', ic:'💴', nm:'目利き', max:6,
+    ds:s=>'スコアとお金が +15%', ap:s=>s.scoreLvl++, lv:s=>s.scoreLvl },
+  { id:'rank',   rar:'n', tg:'RICH', ic:'⭐', nm:'大物の予感', max:4,
+    ds:s=>'魚のランクが上がりやすくなる', ap:s=>s.rankLvl++, lv:s=>s.rankLvl },
+  { id:'chest',  rar:'n', tg:'RICH', ic:'📦', nm:'宝の匂い', max:4,
+    ds:s=>'宝箱が1つ増える', ap:s=>s.chestLvl++, lv:s=>s.chestLvl },
+  { id:'deep',   rar:'n', tg:'RICH', ic:'🕳️', nm:'深場の開拓', max:2,
+    ds:s=>'深場が広がり大物が濃くなる', ap:s=>s.deepLvl++, lv:s=>s.deepLvl },
+
+  // --- レア ---
+  { id:'xline',  rar:'r', tg:'LINE', ic:'✖️', nm:'斜め十字', max:2,
+    ds:s=>s.xlineLvl?'斜めの帯が太くなる':'斜め十字にも釣れるようになる', ap:s=>s.xlineLvl++, lv:s=>s.xlineLvl },
+  { id:'pullBig',rar:'r', tg:'LURE', ic:'🌀', nm:'渦潮の誘い', max:2, tw:2,
+    ds:s=>'引き寄せが一気に +3匹', ap:s=>{ s.pullN+=3; s.pullBigLv++; }, lv:s=>s.pullBigLv },
+  { id:'chestP', rar:'r', tg:'RICH', ic:'🔮', nm:'開運', max:1, tw:2,
+    ds:s=>'宝箱の効果が2回発動する', ap:s=>s.chestDouble=1, lv:s=>s.chestDouble },
+
+  // --- レジェンド ---
+  { id:'dual',   rar:'l', tg:'LURE', ic:'🎣', nm:'双竿', max:1, tw:2,
+    ds:s=>'ルアーが2本同時に落ちる', ap:s=>s.dual=1, lv:s=>s.dual },
+  { id:'fishX2', rar:'l', tg:'AREA', ic:'🌐', nm:'大回遊', max:1, tw:2,
+    ds:s=>'海の魚の数が2倍になる', ap:s=>s.fishDouble=1, lv:s=>s.fishDouble },
+  { id:'chestX3',rar:'l', tg:'RICH', ic:'🏴‍☠️', nm:'海賊の遺産', max:1, tw:2,
+    ds:s=>'宝箱の数が3倍になる', ap:s=>s.chestTriple=1, lv:s=>s.chestTriple },
+  { id:'castP',  rar:'l', tg:'RICH', ic:'⏳', nm:'延長戦', max:1, tw:2,
+    ds:s=>'投げられる回数が +2', ap:s=>{ s.castsLeft+=2; s.extraCast=1; }, lv:s=>s.extraCast },
+
+  // --- トレードオフ ---
+  { id:'focus',  rar:'t', tg:'LINE', ic:'🎯', nm:'一点集中', max:1, tw:2,
+    ds:s=>'円が30%小さくなる／スコア×1.6', ap:s=>s.focus=1, lv:s=>s.focus },
+  { id:'net',    rar:'t', tg:'AREA', ic:'🕸️', nm:'大漁の網', max:1, tw:2,
+    ds:s=>'円が大きく広がる／大物のスコア -40%', ap:s=>s.net=1, lv:s=>s.net },
+  { id:'last',   rar:'t', tg:'RICH', ic:'🔥', nm:'最後の一投', max:1, tw:2,
+    ds:s=>'残り投数 -1／以降スコア×1.5', ap:s=>{ s.last=1; s.castsLeft=Math.max(1,s.castsLeft-1); }, lv:s=>s.last },
+];
+
+// シナジー：カード指定ではなく「タグを何枚集めたか」で成立させる。
+// どんな引きでも必ず何かが噛み合い、ビルドが組み上がった実感が出る。
+const SYNERGIES = [
+  { id:'cross',  nm:'十字砲火',   d:'縦横ななめの帯が1.6倍に太くなる', req:'線 2',
+    c:t=>t.LINE>=2 },
+  { id:'trawl',  nm:'大網漁',     d:'円の中で釣った魚のスコア +25%',   req:'面 3',
+    c:t=>t.AREA>=3 },
+  { id:'vortex', nm:'渦潮',       d:'引き寄せ +2匹',                   req:'誘 2',
+    c:t=>t.LURE>=2 },
+  { id:'gold',   nm:'黄金の海',   d:'宝箱の小判が3倍',                 req:'富 3',
+    c:t=>t.RICH>=3 },
+  { id:'school', nm:'群れの支配', d:'帯で釣った魚のスコア +30%',       req:'面 2 ＋ 線 2',
+    c:t=>t.AREA>=2 && t.LINE>=2 },
+  { id:'nitou',  nm:'二刀流',     d:'2本目のルアーにも帯が乗る',       req:'双竿 ＋ 線 1',
+    c:(t,s)=>s.dual && t.LINE>=1 },
+  { id:'sail',   nm:'総帆展帆',   d:'帯がさらに太くなり スコア +40%',  req:'線 4',
+    c:t=>t.LINE>=4 },
+  { id:'sweep',  nm:'一網打尽',   d:'円の上限を突破して さらに +24',   req:'面 5',
+    c:t=>t.AREA>=5 },
+  { id:'abyss',  nm:'深淵の主',   d:'マグロの出現率が大幅UP',          req:'富 5',
+    c:t=>t.RICH>=5 },
+];
+
+/* ============================================================
+   状態
+   ============================================================ */
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let st, phase = 'title', hiScore = 0, hiBuild = [];
+
+// オブジェクトプール
+const fishPool = [], chestPool = [], popPool = [], bubPool = [];
+for (let i=0;i<900;i++) fishPool.push({ alive:false });
+for (let i=0;i<40;i++)  chestPool.push({ alive:false });
+for (let i=0;i<80;i++)  popPool.push({ alive:false });
+for (let i=0;i<70;i++)  bubPool.push({ alive:false, x:0,y:0,r:0,v:0 });
+
+function newState(){
+  return {
+    castsLeft:CASTS, castsUsed:0, score:0, money:0, earned:0,
+    radiusLvl:0, pullN:0, hlineLvl:0, vlineLvl:0, xlineLvl:0,
+    fishLvl:0, chestLvl:0, scoreLvl:0, rankLvl:0, deepLvl:0,
+    pullBigLv:0, chestDouble:0, dual:0, fishDouble:0, chestTriple:0,
+    extraCast:0, focus:0, net:0, last:0,
+    tag:{ AREA:0, LINE:0, LURE:0, RICH:0 },
+    picks:[], syn:new Set(), puCount:0,
+    nextSwarm:0, forcePU:0,
+    // 派生値
+    radius:0, hlineH:0, vlineW:0, xlineW:0, pull:0,
+    fishTarget:0, chestTarget:0, scoreMult:1, rankP:0,
+  };
+}
+
+function recompute(){
+  const s = st;
+  const before = new Set(s.syn);
+  s.syn = new Set(SYNERGIES.filter(x=>x.c(s.tag, s)).map(x=>x.id));
+  s.radius  = (BASE_R + s.radiusLvl*R_PER_LV + (s.net?38:0) + (s.syn.has('sweep')?24:0)) * (s.focus?0.70:1);
+  const cm  = (s.syn.has('cross')?1.6:1) * (s.syn.has('sail')?1.35:1);
+  s.hlineH  = s.hlineLvl ? (14 + 8*(s.hlineLvl-1)) * cm : 0;
+  s.vlineW  = s.vlineLvl ? (14 + 8*(s.vlineLvl-1)) * cm : 0;
+  s.xlineW  = s.xlineLvl ? (15 + 8*(s.xlineLvl-1)) * cm : 0;
+  s.pull    = s.pullN + (s.syn.has('vortex') ? 2 : 0);
+  s.fishTarget  = Math.round((BASE_FISH + s.fishLvl*12) * (s.fishDouble?2:1));
+  s.chestTarget = Math.round((BASE_CHEST + s.chestLvl) * (s.chestTriple?3:1));
+  s.scoreMult   = (1 + s.scoreLvl*0.15) * (s.focus?1.6:1) * (s.last?1.5:1);
+  s.rankP   = s.rankLvl*0.12 + s.deepLvl*0.05;
+  // 新規シナジーを返す
+  return [...s.syn].filter(id=>!before.has(id));
+}
+
+// 指数カーブ。線形だと後半に全部買えてしまい「3択で悩む」意味が消える
+function puCost(){ return Math.round(40 * Math.pow(1.6, st.puCount)); }
+
+/* ============================================================
+   スポーン
+   ============================================================ */
+function pickRank(){
+  let w = [40,26,18,11,5];
+  if (st.deepLvl) { w[3] += 6*st.deepLvl; w[4] += 4*st.deepLvl; }
+  if (st.syn.has('abyss')) w[4] += 14;
+  const tot = w.reduce((a,b)=>a+b,0);
+  let r = Math.random()*tot, k = 0;
+  for (; k<5; k++){ r -= w[k]; if (r<=0) break; }
+  k = Math.min(4,k);
+  if (Math.random() < st.rankP) k = Math.min(4, k+1);
+  return k;
+}
+
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+
+// 1匹を指定座標まわりに配置
+function spawnFishAt(rank, cx, cy, spread){
+  const f = fishPool.find(o=>!o.alive); if (!f) return null;
+  const R = RANKS[rank];
+  f.alive = true; f.rank = rank;
+  f.x = clamp(cx + (Math.random()-0.5)*spread,        WATER_L+14, WATER_R-14);
+  f.y = clamp(cy + (Math.random()-0.5)*spread*0.55,   WATER_T+14, WATER_B-14);
+  f.homeY = f.y;
+  f.dir = Math.random()<0.5 ? -1 : 1;
+  f.spd = R.sp * (0.75 + Math.random()*0.5);
+  f.wob = Math.random()*6.28;
+  f.caught = false; f.byBand = false; f.byCircle = false; f.pulled = false; f.miss = 0;
+  f.ty0 = null; f.grow = 0;                     // ty0=巻き上げ用オフセット / grow=出現アニメ
+  return f;
+}
+
+// ランクに応じた深さに、群れ単位でスポーン（小魚ほど群れる＝狙いどころが生まれる）
+function spawnSchool(limit, forceRank, atX, atY){
+  const r = (forceRank !== undefined) ? forceRank : pickRank();
+  const sch = RANKS[r].school;
+  let n = 1;
+  if (sch > 0 && Math.random() < sch) n = 2 + Math.floor(Math.random()*4);
+  n = Math.min(n, limit);
+  const d  = DEPTH_PREF[r] + (Math.random()-0.5)*0.26;
+  const cy = (atY !== undefined) ? atY : WATER_T + clamp(d,0.03,0.97)*WATER_H;
+  const cx = (atX !== undefined) ? atX : WATER_L+30 + Math.random()*(WATER_R-WATER_L-60);
+  let made = 0;
+  for (let i=0;i<n;i++) if (spawnFishAt(r, cx, cy, n>1 ? 58 : 0)) made++;
+  return made;
+}
+
+function spawnChest(){
+  const c = chestPool.find(o=>!o.alive); if (!c) return;
+  c.alive = true; c.caught = false; c.grow = 0; c.ty0 = null;
+  c.x = WATER_L + 30 + Math.random()*(WATER_R-WATER_L-60);
+  c.y = WATER_T + 60 + Math.random()*(WATER_H-100);
+  c.wob = Math.random()*6.28;
+  c.kind = ['cast','pu','swarm','coin'][Math.floor(Math.random()*4)];
+}
+
+function restock(){
+  let n = fishPool.filter(o=>o.alive).length;
+  let guard = 0;
+  while (n < st.fishTarget && guard++ < 500){
+    const made = spawnSchool(st.fishTarget - n);
+    if (!made) break;
+    n += made;
+  }
+  let m = chestPool.filter(o=>o.alive).length;
+  while (m < st.chestTarget){ spawnChest(); m++; }
+  if (st.nextSwarm){
+    const cx = WATER_L+70+Math.random()*(WATER_R-WATER_L-140);
+    const cy = WATER_T+90+Math.random()*(WATER_H-180);
+    let k = st.nextSwarm;
+    while (k > 0){ const made = spawnSchool(k, Math.random()<0.3?2:Math.random()<0.5?1:0, cx, cy); if(!made) break; k -= made; }
+    st.nextSwarm = 0;
+    banner('魚群到来！','ここに落とせ');
+  }
+}
+
+/* ============================================================
+   ルアー / 入力
+   ============================================================ */
+let cursor = { x:W/2, dir:1 };
+let lure   = { active:false, x:0, y:0, extra:[] };
+let reel   = { t:0, dur:1.15, fish:[], chests:[], from:0 };
+let held   = false, resultTxt = null, bannerTxt = null;
+
+function startCast(){
+  phase = 'aim'; lure.active = false; cursor.x = W/2; cursor.dir = 1;
+  restock(); updatePUBtn();
+}
+
+function onPress(){
+  // リザルトはタップで早送り（「もう1投」をテンポよく）
+  if (phase === 'result' && resultTxt && resultTxt.t > 0.35){ resultTxt.t = 1.5; return; }
+  if (phase === 'aim'){
+    lure.active = true; lure.x = cursor.x; lure.y = WATER_T - 6;
+    phase = 'drop'; held = true;
+  }
+}
+function onRelease(){
+  if (phase === 'drop' && held){ held = false; resolveCatch(); }
+}
+
+/* ============================================================
+   捕獲判定
+   ============================================================ */
+function inCircle(x,y,lx,ly){ const dx=x-lx, dy=y-ly; return dx*dx+dy*dy <= st.radius*st.radius; }
+function inBands(x,y,lx,ly){
+  if (st.hlineH && Math.abs(y-ly) <= st.hlineH) return true;
+  if (st.vlineW && Math.abs(x-lx) <= st.vlineW) return true;
+  if (st.xlineW){
+    const dx=x-lx, dy=y-ly, K=0.70710678;
+    if (Math.abs((dx+dy)*K) <= st.xlineW || Math.abs((dx-dy)*K) <= st.xlineW) return true;
+  }
+  return false;
+}
+// 捕獲点リスト。双竿は「中央1本＋左右」ではなく、左右2本ちょうど
+function lurePoints(){
+  if (!st.dual) return [{ x:lure.x, y:lure.y, band:true }];
+  const b = st.syn.has('nitou');
+  return [
+    { x:clamp(lure.x-58, WATER_L+16, WATER_R-16), y:lure.y, band:true },
+    { x:clamp(lure.x+58, WATER_L+16, WATER_R-16), y:lure.y, band:b },
+  ];
+}
+
+function resolveCatch(){
+  const pts = lurePoints();
+  const got = [], gotC = [];
+  for (const f of fishPool){
+    if (!f.alive || f.caught) continue;
+    for (const p of pts){
+      const c = inCircle(f.x,f.y,p.x,p.y);
+      const b = p.band && inBands(f.x,f.y,p.x,p.y);
+      if (c || b){ f.caught = true; f.byBand = (!c && b); f.byCircle = c; f.tx = p.x; f.ty = p.y; got.push(f); break; }
+    }
+    if (!f.caught){
+      // ニアミス演出（あと少しだった魚が逃げる）
+      const p = pts[0], d = Math.hypot(f.x-p.x, f.y-p.y);
+      if (d < st.radius + 34){ f.miss = 0.9; f.dir = (f.x < p.x) ? -1 : 1; }
+    }
+  }
+  // 引き寄せ：範囲外の近い魚をN匹まで確保
+  if (st.pull > 0){
+    const p = pts[0];
+    const cand = fishPool.filter(f=>f.alive && !f.caught)
+      .map(f=>({ f, d:Math.hypot(f.x-p.x, f.y-p.y) }))
+      .filter(o=>o.d < st.radius + 165)
+      .sort((a,b)=>a.d-b.d).slice(0, st.pull);
+    for (const o of cand){ o.f.caught = true; o.f.pulled = true; o.f.miss = 0; o.f.tx = p.x; o.f.ty = p.y; got.push(o.f); }
+  }
+  for (const c of chestPool){
+    if (!c.alive || c.caught) continue;
+    for (const p of pts){
+      if (inCircle(c.x,c.y,p.x,p.y) || (p.band && inBands(c.x,c.y,p.x,p.y))){
+        c.caught = true; c.tx = p.x; c.ty = p.y; gotC.push(c); break;
+      }
+    }
+  }
+  reel = { t:0, dur:1.15, fish:got, chests:gotC, from:lure.y, tallied:false };
+  phase = 'reel';
+}
+
+function tally(){
+  let sc = 0, mo = 0, cnt = reel.fish.length;
+  for (const f of reel.fish){
+    const R = RANKS[f.rank];
+    let m = st.scoreMult;
+    if (st.net && f.rank >= 3) m *= 0.6;
+    if (f.byBand   && st.syn.has('school')) m *= 1.3;
+    if (f.byBand   && st.syn.has('sail'))   m *= 1.4;
+    if (f.byCircle && st.syn.has('trawl'))  m *= 1.25;
+    const v = Math.round(R.sc * m);
+    sc += v; mo += Math.round(v * MONEY_RATE);
+  }
+  // 一投コンボ倍率
+  let combo = 1;
+  if (cnt >= 25) combo = 2.0; else if (cnt >= 15) combo = 1.6;
+  else if (cnt >= 8) combo = 1.3; else if (cnt >= 4) combo = 1.15;
+  sc = Math.round(sc*combo); mo = Math.round(mo*combo);
+
+  const msgs = [];
+  const times = st.chestDouble ? 2 : 1;
+  for (const c of reel.chests){
+    for (let i=0;i<times;i++){
+      if (c.kind === 'cast'){ st.castsLeft++; msgs.push('投数 +1'); }
+      else if (c.kind === 'pu'){ st.forcePU = 1; msgs.push('即パワーアップ！'); }
+      else if (c.kind === 'swarm'){ st.nextSwarm += 26; msgs.push('次の一投に魚群'); }
+      else { const g = Math.round(150*st.scoreMult*(st.syn.has('gold')?3:1)); mo += g; msgs.push('小判 ¥'+g); }
+    }
+  }
+  st.score += sc; st.money += mo; st.earned += mo;
+  resultTxt = { n:cnt, sc, mo, combo, msgs, t:0 };
+  for (const f of reel.fish){ f.alive = false; f.caught = false; }
+  for (const c of reel.chests) c.alive = false;
+  updatePUBtn();
+}
+
+/* ============================================================
+   更新
+   ============================================================ */
+function update(dt){
+  // 泡
+  if (Math.random() < dt*14){
+    const b = bubPool.find(o=>!o.alive);
+    if (b){ b.alive=true; b.x=WATER_L+Math.random()*(WATER_R-WATER_L);
+            b.y=WATER_B; b.r=1.5+Math.random()*3; b.v=22+Math.random()*30; }
+  }
+  for (const b of bubPool){ if(!b.alive) continue; b.y -= b.v*dt; if (b.y < WATER_T) b.alive=false; }
+
+  // 魚
+  const activeLure = (phase==='drop') ? lure : null;
+  for (const f of fishPool){
+    if (!f.alive) continue;
+    if (f.grow < 1) f.grow = Math.min(1, f.grow + dt*3);
+    const R = RANKS[f.rank];
+    if (f.caught){
+      const k = Math.min(1, reel.t/0.28);
+      f.x += (f.tx - f.x) * k * 0.35; f.y += (f.ty - f.y) * k * 0.35;
+      continue;
+    }
+    let sp = f.spd;
+    if (f.miss > 0){ f.miss -= dt; sp *= 3.1; }
+    // 逃げる（ランク4-5）
+    if (activeLure && R.flee){
+      const d = Math.hypot(f.x-lure.x, f.y-lure.y);
+      if (d < 125){ f.dir = (f.x < lure.x) ? -1 : 1; sp *= 2.2;
+                    f.y += (f.y < lure.y ? -1 : 1) * sp * 0.45 * dt; }
+    }
+    f.x += f.dir * sp * dt;
+    f.wob += dt * 3.2;
+    f.y = f.homeY + Math.sin(f.wob) * 7;
+    if (f.x < WATER_L+14){ f.x = WATER_L+14; f.dir = 1; }
+    if (f.x > WATER_R-14){ f.x = WATER_R-14; f.dir = -1; }
+    f.homeY = Math.max(WATER_T+16, Math.min(WATER_B-16, f.homeY));
+  }
+  for (const c of chestPool){
+    if (!c.alive) continue;
+    if (c.grow < 1) c.grow = Math.min(1, c.grow + dt*3);
+    c.wob += dt*1.8;
+    if (c.caught){ const k=Math.min(1,reel.t/0.28); c.x+=(c.tx-c.x)*k*0.35; c.y+=(c.ty-c.y)*k*0.35; }
+  }
+
+  if (phase === 'aim'){
+    cursor.x += cursor.dir * CURSOR_SPD * dt;
+    if (cursor.x > WATER_R-18){ cursor.x = WATER_R-18; cursor.dir = -1; }
+    if (cursor.x < WATER_L+18){ cursor.x = WATER_L+18; cursor.dir = 1; }
+  }
+  else if (phase === 'drop'){
+    lure.y += DROP_SPD * dt;
+    if (lure.y >= WATER_B - 8){ lure.y = WATER_B - 8; held = false; resolveCatch(); }
+  }
+  else if (phase === 'reel'){
+    reel.t += dt;
+    const k = Math.min(1, Math.max(0,(reel.t-0.28)/(reel.dur-0.28)));
+    const ny = reel.from + (WATER_T-30 - reel.from) * (k*k*(3-2*k));
+    for (const f of reel.fish){ if(reel.t>0.28){ f.x += (lure.x-f.x)*0.12; f.y = ny + (f.ty0 ??= (Math.random()-0.5)*26); } }
+    for (const c of reel.chests){ if(reel.t>0.28){ c.x += (lure.x-c.x)*0.12; c.y = ny + (c.ty0 ??= (Math.random()-0.5)*26); } }
+    lure.y = ny;
+    if (reel.t >= reel.dur && !reel.tallied){ reel.tallied = true; tally(); phase = 'result'; }
+  }
+  else if (phase === 'result'){
+    resultTxt.t += dt;
+    if (resultTxt.t > 1.5){
+      resultTxt = null; st.castsUsed++; st.castsLeft--;
+      if (st.forcePU){ st.forcePU = 0; openPU(true); }
+      else if (st.castsLeft <= 0) gameOver();
+      else startCast();
+    }
+  }
+  if (bannerTxt){ bannerTxt.t += dt; if (bannerTxt.t > 1.6) bannerTxt = null; }
+}
+
+/* ============================================================
+   描画
+   ============================================================ */
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  // 空
+  let g = ctx.createLinearGradient(0,0,0,WATER_T);
+  g.addColorStop(0,'#0d2b45'); g.addColorStop(1,'#1c4e6e');
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,WATER_T);
+  // 水
+  g = ctx.createLinearGradient(0,WATER_T,0,WATER_B);
+  g.addColorStop(0,'#1b6f96'); g.addColorStop(0.45,'#0f4a72'); g.addColorStop(1,'#04203c');
+  ctx.fillStyle = g; ctx.fillRect(WATER_L,WATER_T,WATER_R-WATER_L,WATER_H);
+  // 海底
+  ctx.fillStyle = '#0a1626'; ctx.fillRect(0,WATER_B,W,H-WATER_B);
+  ctx.fillStyle = '#132a3f';
+  ctx.beginPath(); ctx.moveTo(WATER_L,WATER_B);
+  for (let x=WATER_L;x<=WATER_R;x+=40) ctx.lineTo(x, WATER_B-6-Math.sin(x*0.05)*6);
+  ctx.lineTo(WATER_R,WATER_B+12); ctx.lineTo(WATER_L,WATER_B+12); ctx.fill();
+
+  // 泡
+  ctx.fillStyle = 'rgba(255,255,255,.16)';
+  for (const b of bubPool){ if(!b.alive) continue; ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,6.29); ctx.fill(); }
+
+  // 宝箱・魚
+  for (const c of chestPool) if (c.alive) drawChest(c);
+  for (const f of fishPool)  if (f.alive) drawFish(f);
+
+  // 捕獲範囲プレビュー
+  if (phase === 'drop' || phase === 'reel') drawCapture(phase==='reel' ? 0.35 : 1);
+
+  // ルアー
+  if (lure.active){
+    for (const p of lurePoints()){
+      ctx.strokeStyle = 'rgba(255,255,255,.45)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(p.x, 90); ctx.lineTo(p.x, p.y); ctx.stroke();
+      ctx.fillStyle = '#ffe27a'; ctx.beginPath(); ctx.arc(p.x,p.y,7,0,6.29); ctx.fill();
+      ctx.fillStyle = '#e2453b'; ctx.beginPath(); ctx.arc(p.x,p.y-2,3.5,0,6.29); ctx.fill();
+    }
+  }
+
+  // 水面ライン
+  ctx.strokeStyle = 'rgba(180,235,255,.55)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(WATER_L,WATER_T); ctx.lineTo(WATER_R,WATER_T); ctx.stroke();
+
+  // カーソル
+  if (phase === 'aim'){
+    ctx.fillStyle = '#ffe27a';
+    ctx.beginPath(); ctx.moveTo(cursor.x,RAIL_Y+16); ctx.lineTo(cursor.x-11,RAIL_Y); ctx.lineTo(cursor.x+11,RAIL_Y); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,226,122,.30)'; ctx.setLineDash([5,7]); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cursor.x,RAIL_Y+18); ctx.lineTo(cursor.x,WATER_B); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle = 'rgba(255,255,255,.14)';
+    ctx.beginPath(); ctx.moveTo(WATER_L,RAIL_Y+8); ctx.lineTo(WATER_R,RAIL_Y+8); ctx.stroke();
+  }
+
+  drawHUD();
+  if (resultTxt) drawResult();
+  if (bannerTxt) drawBanner();
+}
+
+function drawCapture(a){
+  const pts = lurePoints();
+  ctx.save(); ctx.beginPath(); ctx.rect(WATER_L,WATER_T,WATER_R-WATER_L,WATER_H); ctx.clip();
+  for (const p of pts){
+    if (p.band){
+      ctx.fillStyle = `rgba(120,230,255,${0.16*a})`;
+      if (st.hlineH) ctx.fillRect(WATER_L, p.y-st.hlineH, WATER_R-WATER_L, st.hlineH*2);
+      if (st.vlineW) ctx.fillRect(p.x-st.vlineW, WATER_T, st.vlineW*2, WATER_H);
+      if (st.xlineW){
+        ctx.save(); ctx.translate(p.x,p.y);
+        for (const rot of [Math.PI/4, -Math.PI/4]){
+          ctx.save(); ctx.rotate(rot); ctx.fillRect(-900, -st.xlineW, 1800, st.xlineW*2); ctx.restore();
+        }
+        ctx.restore();
+      }
+    }
+    const gr = ctx.createRadialGradient(p.x,p.y,st.radius*0.25,p.x,p.y,st.radius);
+    gr.addColorStop(0,`rgba(140,240,255,${0.05*a})`); gr.addColorStop(1,`rgba(140,240,255,${0.22*a})`);
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(p.x,p.y,st.radius,0,6.29); ctx.fill();
+    ctx.strokeStyle = `rgba(180,250,255,${0.75*a})`; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(p.x,p.y,st.radius,0,6.29); ctx.stroke();
+    if (st.pull){
+      ctx.strokeStyle = `rgba(255,180,240,${0.32*a})`; ctx.setLineDash([4,7]);
+      ctx.beginPath(); ctx.arc(p.x,p.y,st.radius+165,0,6.29); ctx.stroke(); ctx.setLineDash([]);
+    }
+  }
+  ctx.restore();
+}
+
+function drawFish(f){
+  const R = RANKS[f.rank], s = R.s * (0.45 + f.grow*0.55);
+  ctx.save(); ctx.translate(f.x, f.y); ctx.scale(f.dir, 1);
+  if (f.caught){ ctx.shadowColor = '#fff'; ctx.shadowBlur = 12; }
+  else if (f.miss > 0){ ctx.globalAlpha = 0.55 + Math.sin(f.miss*40)*0.3; }
+  ctx.fillStyle = R.c;
+  ctx.beginPath(); ctx.ellipse(0,0,s,s*0.55,0,0,6.29); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-s*0.85,0); ctx.lineTo(-s*1.5,-s*0.5); ctx.lineTo(-s*1.5,s*0.5); ctx.fill();
+  if (f.rank >= 3){ ctx.fillStyle = 'rgba(255,255,255,.28)';
+    ctx.beginPath(); ctx.ellipse(s*0.1,-s*0.18,s*0.55,s*0.16,0,0,6.29); ctx.fill(); }
+  ctx.fillStyle = '#12202e'; ctx.beginPath(); ctx.arc(s*0.52,-s*0.13,s*0.12,0,6.29); ctx.fill();
+  ctx.restore();
+}
+
+function drawChest(c){
+  const s = 15 * (0.45 + c.grow*0.55), y = c.y + Math.sin(c.wob)*3;
+  ctx.save(); ctx.translate(c.x, y);
+  if (c.caught){ ctx.shadowColor='#ffd76a'; ctx.shadowBlur=16; }
+  ctx.fillStyle = '#8a5a2b'; ctx.fillRect(-s,-s*0.55,s*2,s*1.1);
+  ctx.fillStyle = '#c98a3f'; ctx.fillRect(-s,-s*0.55,s*2,s*0.34);
+  ctx.fillStyle = '#ffd76a'; ctx.fillRect(-s*0.16,-s*0.55,s*0.32,s*1.1);
+  ctx.strokeStyle = 'rgba(255,215,106,.55)'; ctx.lineWidth = 1.5;
+  ctx.strokeRect(-s,-s*0.55,s*2,s*1.1);
+  ctx.restore();
+}
+
+function drawHUD(){
+  ctx.fillStyle = 'rgba(0,0,0,.38)'; ctx.fillRect(0,0,W,64);
+  ctx.textAlign = 'left'; ctx.fillStyle = '#9fd0e8'; ctx.font = '11px sans-serif';
+  ctx.fillText('SCORE', 14, 20);
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 26px sans-serif';
+  ctx.fillText(st.score.toLocaleString(), 14, 46);
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#9fd0e8'; ctx.font = '11px sans-serif'; ctx.fillText('のこり', W-108, 20);
+  ctx.fillStyle = '#ffe27a'; ctx.font = 'bold 26px sans-serif'; ctx.fillText(st.castsLeft+'投', W-108, 46);
+  ctx.fillStyle = '#9fd0e8'; ctx.font = '11px sans-serif'; ctx.fillText('しょじきん', W-14, 20);
+  ctx.fillStyle = '#8fe0a0'; ctx.font = 'bold 22px sans-serif'; ctx.fillText('¥'+st.money, W-14, 44);
+
+  // ビルドタグ（これが伸びる＝ビルドが組み上がっている、が一目で分かる）
+  ctx.textAlign = 'left'; ctx.font = 'bold 12px sans-serif';
+  let bx = 14;
+  for (const k of ['AREA','LINE','LURE','RICH']){
+    const v = st.tag[k], on = v > 0;
+    ctx.fillStyle = on ? TAGCOL[k] : 'rgba(255,255,255,.08)';
+    ctx.globalAlpha = on ? 0.28 : 1; ctx.fillRect(bx, 70, 52, 21); ctx.globalAlpha = 1;
+    ctx.strokeStyle = on ? TAGCOL[k] : 'transparent'; ctx.lineWidth = 1;
+    ctx.strokeRect(bx+0.5, 70.5, 51, 20);
+    ctx.fillStyle = on ? TAGCOL[k] : 'rgba(255,255,255,.3)';
+    ctx.fillText(TAGNAME[k] + ' ' + v, bx+9, 85);
+    bx += 57;
+  }
+  if (st.syn.size){
+    ctx.fillStyle = '#e8b4ff'; ctx.font = 'bold 11px sans-serif';
+    const names = [...st.syn].map(id=>SYNERGIES.find(s=>s.id===id).nm);
+    const head  = names.slice(0,4).join(' ／ ') + (names.length>4 ? ` +${names.length-4}` : '');
+    ctx.fillText('◆ ' + head, 14, 105);
+  }
+
+  // 操作ヒント（右下のパワーアップボタンを避けて左側に置く）
+  ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(255,255,255,.6)';
+  if (phase==='aim'){
+    ctx.font = '12px sans-serif';
+    ctx.fillText('押した瞬間に よこ が決まる', 148, 730);
+    ctx.fillText('押しっぱなしで ふかく', 148, 750);
+  }
+  if (phase==='drop'){
+    ctx.font = 'bold 15px sans-serif'; ctx.fillStyle = '#ffe27a';
+    ctx.fillText('離すと釣る！', 148, 742);
+  }
+}
+
+function drawResult(){
+  const r = resultTxt, a = Math.min(1, r.t*5) * Math.min(1, (1.5-r.t)*4);
+  ctx.save(); ctx.globalAlpha = Math.max(0,a);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(0,0,0,.55)';
+  const bh = (r.msgs.length ? 132 + r.msgs.length*22 : 116);
+  ctx.fillRect(60, 300, 360, bh);
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 30px sans-serif';
+  ctx.fillText(r.n + ' 匹！', 240, 342);
+  ctx.fillStyle = '#ffe27a'; ctx.font = 'bold 24px sans-serif';
+  ctx.fillText('+' + r.sc.toLocaleString(), 240, 374);
+  ctx.fillStyle = '#8fe0a0'; ctx.font = '15px sans-serif';
+  ctx.fillText('¥+' + r.mo + (r.combo>1 ? '   コンボ ×'+r.combo : ''), 240, 396);
+  ctx.font = 'bold 14px sans-serif'; ctx.fillStyle = '#ffd76a';
+  r.msgs.forEach((m,i)=>ctx.fillText('📦 '+m, 240, 422+i*22));
+  ctx.restore();
+}
+
+function banner(t,d){ bannerTxt = { t:0, a:t, b:d }; }
+function drawBanner(){
+  const b = bannerTxt, a = Math.min(1,b.t*5)*Math.min(1,(1.6-b.t)*4);
+  ctx.save(); ctx.globalAlpha = Math.max(0,a); ctx.textAlign='center';
+  ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(90,596,300,62);
+  ctx.fillStyle = '#4fd1ff'; ctx.font='bold 24px sans-serif'; ctx.fillText(b.a,240,627);
+  ctx.fillStyle = '#fff'; ctx.font='13px sans-serif'; ctx.fillText(b.b,240,649);
+  ctx.restore();
+}
+
+/* ============================================================
+   パワーアップUI
+   ============================================================ */
+const puBtn=document.getElementById('puBtn'), puFill=document.getElementById('puFill'),
+      puSub=document.getElementById('puSub'), modal=document.getElementById('modal'),
+      cards=document.getElementById('cards'), modalSub=document.getElementById('modalSub'),
+      synPop=document.getElementById('synPop');
+
+function updatePUBtn(){
+  const c = puCost(), ratio = Math.min(1, st.money / (c*3));
+  puFill.style.width = (ratio*100)+'%';
+  if (st.money >= c){
+    puBtn.classList.add('ready');
+    const boost = st.money >= c*3 ? '★★ レア率MAX' : st.money >= c*2 ? '★ レア率UP' : 'そのまま押せる';
+    puSub.textContent = '¥'+c+' で開放 / '+boost;
+  } else {
+    puBtn.classList.remove('ready');
+    puSub.textContent = 'あと ¥' + (c - st.money);
+  }
+}
+// ゲージの目盛り（2倍・3倍位置）
+{ const g=document.getElementById('puGauge');
+  for (const p of [66.6, 100]) { const d=document.createElement('div'); d.className='tick'; d.style.left=p+'%'; g.appendChild(d);} }
+
+function rollChoices(){
+  const c = puCost();
+  let wN=74, wR=20, wL=3, wT=3;
+  if (st.money >= c*3){ wR*=3.4; wL*=6; wT*=1.6; }
+  else if (st.money >= c*2){ wR*=2.2; wL*=3; wT*=1.3; }
+  const out = [];
+  // トレードオフは序盤に引くと立て直せないので、3回目のパワーアップから解禁
+  const avail = UPGRADES.filter(u=>u.lv(st) < u.max && !(u.rar==='t' && st.puCount < 2));
+  if (st.puCount < 2) wT = 0;
+  for (let i=0;i<3 && avail.length;i++){
+    const tot = wN+wR+wL+wT; let r = Math.random()*tot, rar;
+    if ((r-=wN)<=0) rar='n'; else if ((r-=wR)<=0) rar='r'; else if ((r-=wL)<=0) rar='l'; else rar='t';
+    let pool = avail.filter(u=>u.rar===rar && !out.includes(u));
+    if (!pool.length) pool = avail.filter(u=>!out.includes(u));
+    if (!pool.length) break;
+    out.push(pool[Math.floor(Math.random()*pool.length)]);
+  }
+  return out;
+}
+
+// この1枚を取ったとき新しく成立するシナジー
+function synAfter(u){
+  const t = { ...st.tag }; t[u.tg] += (u.tw || 1);
+  const fake = { dual: st.dual || (u.id==='dual' ? 1 : 0) };
+  return SYNERGIES.filter(x => x.c(t, fake) && !st.syn.has(x.id));
+}
+
+function openPU(free){
+  phase = 'powerup';
+  const list = rollChoices();
+  modalSub.textContent = free ? '宝箱からのプレゼント（無料）'
+    : (st.money >= puCost()*3 ? '★★ 大盤振る舞い抽選'
+    : st.money >= puCost()*2 ? '★ 上振れ抽選' : '通常抽選');
+  cards.innerHTML = '';
+  const RNAME = { n:'ノーマル', r:'レア', l:'レジェンド', t:'トレードオフ' };
+  for (const u of list){
+    const gain = synAfter(u);          // この1枚で成立するシナジー
+    const d = document.createElement('div');
+    d.className = 'card r-'+u.rar;
+    d.innerHTML = `<div class="ic">${u.ic}</div><div class="tx">
+      <div class="nm">${u.nm} <span class="badge">${RNAME[u.rar]}</span>
+        <span class="badge" style="color:${TAGCOL[u.tg]}">${TAGNAME[u.tg]}+${u.tw||1}</span></div>
+      <div class="ds">${u.ds(st)}</div>
+      ${gain.length ? `<div class="syn">◆ シナジー成立：${gain.map(g=>g.nm).join('・')}</div>` : ''}
+      <div class="lv">Lv ${u.lv(st)} / ${u.max}</div></div>`;
+    d.onclick = ()=>choose(u, free);
+    cards.appendChild(d);
+  }
+  // 未成立シナジーの残り条件を下に出す（次に何を狙うかが見える）
+  const rest = SYNERGIES.filter(s=>!st.syn.has(s.id)).slice(0,3);
+  if (rest.length){
+    const h = document.createElement('div'); h.id='synHint';
+    h.innerHTML = rest.map(s=>`<span>${s.nm}<b>${s.req}</b></span>`).join('');
+    cards.appendChild(h);
+  }
+  modal.classList.add('show');
+}
+
+function choose(u, free){
+  if (!free){ st.money -= puCost(); st.puCount++; }
+  u.ap(st); st.picks.push(u.nm); st.tag[u.tg] += (u.tw || 1);
+  const fresh = recompute();
+  modal.classList.remove('show');
+  updatePUBtn();
+  fresh.forEach((id,i)=>setTimeout(()=>showSyn(SYNERGIES.find(s=>s.id===id)), i*2400));
+  if (st.castsLeft <= 0) gameOver(); else startCast();
+}
+
+function showSyn(s){
+  synPop.querySelector('.n').textContent = s.nm;
+  synPop.querySelector('.d').textContent = s.d;
+  synPop.style.transition='none'; synPop.style.opacity='1';
+  setTimeout(()=>{ synPop.style.transition='opacity .8s'; synPop.style.opacity='0'; }, 1500);
+}
+
+puBtn.addEventListener('pointerdown', e=>{
+  e.stopPropagation();
+  if (st && st.money >= puCost() && (phase==='aim')) openPU(false);
+});
+
+/* ============================================================
+   タイトル / ゲームオーバー
+   ============================================================ */
+const screen=document.getElementById('screen'), scTtl=document.getElementById('scTtl'),
+      scBody=document.getElementById('scBody'), scBtn=document.getElementById('scBtn'),
+      hsTxt=document.getElementById('hsTxt'), buildList=document.getElementById('buildList');
+
+function showTitle(){
+  phase='title'; screen.classList.remove('hide');
+  scTtl.innerHTML = '十投一会<small>〜 大 漁 ビ ル ド 〜</small>';
+  scBody.innerHTML = '押した瞬間に <b>よこ</b>、押しっぱなしで <b>ふかさ</b>。<br>'
+    + '全<b>10投</b>でハイスコアをねらえ！<br><span style="opacity:.6;font-size:12px">'
+    + 'タップ / スペースキー</span>';
+  buildList.innerHTML = '';
+  scBtn.textContent = 'はじめる';
+  hsTxt.textContent = hiScore ? 'ハイスコア ' + hiScore.toLocaleString() : '';
+}
+
+function gameOver(){
+  phase='over';
+  if (st.score > hiScore){ hiScore = st.score; hiBuild = [...st.picks]; }
+  screen.classList.remove('hide');
+  scTtl.innerHTML = 'つりおわり<small>お つ か れ さ ま</small>';
+  const rank = st.score>=30000?'🏆 伝説の釣り師':st.score>=15000?'🥇 名人':st.score>=7000?'🥈 中級者':st.score>=2500?'🥉 見習い':'🐟 まだまだ';
+  scBody.innerHTML = `<div style="font-size:40px;font-weight:bold;color:#ffe27a">${st.score.toLocaleString()}</div>
+    <div style="font-size:18px;margin:4px 0 8px">${rank}</div>
+    <div style="font-size:12px;opacity:.7">かせいだお金 ¥${st.earned} / パワーアップ ${st.picks.length}回</div>`;
+  buildList.innerHTML = st.picks.map(p=>`<span>${p}</span>`).join('')
+    + (st.syn.size ? '<br>' + [...st.syn].map(id=>`<span style="background:rgba(224,165,245,.25)">◆${SYNERGIES.find(s=>s.id===id).nm}</span>`).join('') : '');
+  scBtn.textContent = 'もう1回';
+  hsTxt.textContent = 'ハイスコア ' + hiScore.toLocaleString();
+}
+
+function newGame(){
+  st = newState(); recompute();
+  for (const f of fishPool) f.alive = false;
+  for (const c of chestPool) c.alive = false;
+  screen.classList.add('hide');
+  updatePUBtn(); startCast();
+}
+scBtn.addEventListener('pointerdown', e=>{ e.stopPropagation(); newGame(); });
+
+/* ============================================================
+   入力
+   ============================================================ */
+const stage = document.getElementById('stage');
+function guard(e){ return e.target===puBtn || puBtn.contains(e.target) || modal.contains(e.target) || screen.contains(e.target); }
+stage.addEventListener('pointerdown', e=>{ if(guard(e)) return; e.preventDefault(); onPress(); });
+window.addEventListener('pointerup',   e=>{ onRelease(); });
+window.addEventListener('pointercancel', ()=>onRelease());
+window.addEventListener('blur', ()=>onRelease());   // 押しっぱなしで離脱しても糸が固まらないように
+window.addEventListener('keydown', e=>{
+  if (e.code!=='Space' && e.code!=='Enter') return;
+  e.preventDefault();
+  if (phase==='title'||phase==='over'){ newGame(); return; }
+  if (!e.repeat) onPress();
+});
+window.addEventListener('keyup', e=>{ if(e.code==='Space'||e.code==='Enter') onRelease(); });
+document.addEventListener('touchmove', e=>e.preventDefault(), { passive:false });
+
+/* ============================================================
+   スケーリング / ループ
+   ============================================================ */
+function resize(){
+  const iw = window.innerWidth, ih = window.innerHeight;
+  const s  = Math.min(iw / W, ih / H);
+  stage.style.transform = `translate(${(iw - W*s)/2}px, ${(ih - H*s)/2}px) scale(${s})`;
+}
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', ()=>setTimeout(resize,120));
+resize();
+
+st = newState(); recompute(); showTitle();
+
+let last = performance.now();
+function loop(now){
+  const dt = Math.min(0.05, (now - last)/1000); last = now;
+  if (phase!=='title' && phase!=='over' && phase!=='powerup') update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
+</content>
+</invoke>
