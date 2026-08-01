@@ -1351,7 +1351,9 @@ function canTake(c){
 
 function rollChoices(){
   const cost = puCost();
-  let wN=74, wR=20, wL=2.0, wT=6;
+  // ヌシを釣ると レジェンドが1枚 確定でもらえるので、
+  // 通常抽選ぶんは そのぶん絞っている（1プレイ 0.3枚くらい）
+  let wN=74, wR=20, wL=1.2, wT=6;
   if (st.money >= cost*3){ wR*=3.0; wL*=1.8; wT*=1.5; }
   else if (st.money >= cost*2){ wR*=2.0; wL*=1.35; wT*=1.3; }
   if (st.puCount < 2) wT = 0;
