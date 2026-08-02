@@ -1137,7 +1137,7 @@ function moveFish(f, dt){
   } else if (f.boss){
     const B = st.bossType;
     f.tmr -= dt;
-    if (f.rest > 0){ f.rest -= dt; sp = 0; if (f.rest<=0) f.tmr = 3 + Math.random()*2; }
+    if (f.rest > 0){ f.rest -= dt; sp = 0; if (f.rest<=0) f.tmr = 4 + Math.random()*3; }
     else {
       sp = B.spd;
       if (B.move === 'eight'){                  // 8の字：ゆっくり→急加速
@@ -1149,7 +1149,7 @@ function moveFish(f, dt){
       } else {                                  // まっすぐ超高速
         f.wob += dt*1.0; f.y = f.homeY + Math.sin(f.wob)*8;
       }
-      if (f.tmr <= 0) f.rest = 0.9;             // 息つぎ＝唯一のスキ
+      if (f.tmr <= 0) f.rest = 0.7;             // 息つぎ＝唯一のスキ
       else if (phase==='drop'){
         const d = Math.hypot(f.x-lure.x, f.y-lure.y);
         if (d < 165){ f.dir = (f.x < lure.x) ? -1 : 1; sp = B.fsp; }
@@ -1737,7 +1737,7 @@ const tradePool = ()=>CARDS.filter(c=>c.t==='t' && canTake(c));
 function rollChoices(){
   const cost = puCost();
   // 2プレイに1回ほど出会える量。龍神を釣ると しばらく確率が上がる
-  let wN=74, wR=20, wL=2.2;
+  let wN=74, wR=20, wL=1.4;
   if (st.legendBoost > 0){ wL *= 3.5; st.legendBoost--; }
   if (st.money >= cost*3){ wR*=3.0; wL*=1.8; }
   else if (st.money >= cost*2){ wR*=2.0; wL*=1.35; }
