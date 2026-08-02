@@ -862,13 +862,15 @@ function spawnChest(){
   c.vx = (Math.random()<0.5?-1:1)*(45+Math.random()*26);
   c.vy = (Math.random()-0.5)*40;
   c.tmr = 1.0 + Math.random()*1.2; c.warn = 0; c.dash = 0;
-  c.kind = ['coin','ticket','ticket','swarm','storm','flag'][(Math.random()*6)|0];
+  c.kind = ['coin','ticket','swarm','storm','flag','coin'][(Math.random()*6)|0];
 }
 
 /* かけひき券。枠が埋まっていれば お金に変わる（ムダにならない） */
 function gainTicket(){
   if (usedIn('t') + st.tickets < st.tradeMax){ st.tickets++; updateBtns(); return '🎫 かけひき券！'; }
-  const g = Math.round(puCost()*1.2);
+  // あまった券は お金に。ただし値段カーブ（指数）に連動させると
+  // 終盤に1枚数百万円になってしまうので、小判と同じ頭打ちの式にする
+  const g = Math.round(200 * Math.min(st.scoreMult,5) * st.coinMult);
   st.money += g; return '¥'+g;
 }
 
