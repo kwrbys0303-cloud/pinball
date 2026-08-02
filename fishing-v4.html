@@ -1912,10 +1912,12 @@ rollGo.addEventListener('pointerdown', e=>{
 const screen=$('screen'), scTtl=$('scTtl'), scBody=$('scBody'),
       scBtn=$('scBtn'), hsTxt=$('hsTxt'), buildList=$('buildList');
 
+/* 自動プレイ（12投完走）の実測分布から決めた。
+   適当に投げて 9〜11万、狙って投げて 20〜53万 あたりに落ちる */
 const RANK_TH = [
-  [260000,'SSS','#ff7ad0'], [160000,'SS','#ffd76a'], [95000,'S','#ffe9a8'],
-  [58000,'A','#8fe0a0'], [34000,'B','#7fd0ff'], [19000,'C','#9fb8d0'],
-  [9000,'D','#a0a8b0'], [0,'E','#8a8f96'],
+  [800000,'SSS','#ff7ad0'], [500000,'SS','#ffd76a'], [300000,'S','#ffe9a8'],
+  [180000,'A','#8fe0a0'], [100000,'B','#7fd0ff'], [55000,'C','#9fb8d0'],
+  [25000,'D','#a0a8b0'], [0,'E','#8a8f96'],
 ];
 function rankOf(sc){ for (const r of RANK_TH) if (sc >= r[0]) return r; return RANK_TH[RANK_TH.length-1]; }
 
