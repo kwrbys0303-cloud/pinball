@@ -354,7 +354,7 @@ const FISH_FLOOR  = 40;
 const FISH_CAP    = 620;
 const BASE_CHEST  = 3;
 const MONEY_RATE  = 0.6;
-const FREE_PU_MAX = 4;
+const FREE_PU_MAX = 3;
 const CURSOR_SPD  = 330;
 const DROP_SPD    = 300;
 const PULL_RING   = 100;
@@ -663,7 +663,7 @@ function recompute(){
   s.pull = Math.min(PULL_CAP,
     lv('pull') + lv('pullBig')*2 + (on('wind6') ? 1 : 0) + s.pend.pull);
 
-  const ak = 0.45 + 0.55*s.stageArea;
+  const ak = Math.max(0.25, s.stageArea);
   s.regen = lv('desper') ? 0
           : Math.round((FISH_REGEN + lv('fish')*3 + (lv('fishBig')?10:0) + waterR)
                        * allM * (lv('chibi') ? 1.8 : 1) * ak);
@@ -750,9 +750,10 @@ function spawnSchool(limit, forceRank, atX, atY){
   return made;
 }
 const aliveFish = ()=>fishPool.reduce((a,f)=>a+(f.alive&&!f.boss&&!f.rare?1:0),0);
-/* せまいステージは 魚の上限も湧きも しぼる。
-   そうしないと 天空の雲海のような小さい海が むちゃくちゃ濃くなる */
-const areaK   = ()=>0.45 + 0.55*st.stageArea;
+/* 魚の密度が どのステージでも同じになるよう 面積に比例させる。
+   （0.45+0.55×面積 では せまい海が2倍以上 濃くなり、
+     大きなワッカで 海ごと さらう形になっていた） */
+const areaK   = ()=>Math.max(0.25, st.stageArea);
 const fishCap = ()=>Math.round(FISH_CAP * areaK());
 function addFish(n, atX, atY){
   let room = Math.min(n, fishCap() - aliveFish()), guard = 0;
@@ -1687,6 +1688,7 @@ function slamInto(cardEl, card, done){
 
 function choose(card, free, cardEl){
   if (phase !== 'powerup') return;
+  if (!canTake(card)) return;          // 枠が埋まったあとの多重クリック対策
   phase = 'slam';
   slamInto(cardEl, card, ()=>applyPick(card, free));
 }
@@ -1710,7 +1712,8 @@ function applyPick(c, free){
     st.lvl[c.id] = 0; st.rec.temp++;
   }
   let slotBorn = false;
-  if (c.slot==='b' && !wasMax && isMaxed(c)){ st.slotMax++; slotBorn = true; }
+  // 枠は増えるが 際限なくは増やさない（終盤に何でも取れると 選ぶ意味が消える）
+  if (c.slot==='b' && !wasMax && isMaxed(c) && st.slotMax < 7){ st.slotMax++; slotBorn = true; }
   if (c.id==='fish')    addFish(18);
   if (c.id==='fishBig') addFish(60);
   if (c.id==='umi')     addFish(40);
