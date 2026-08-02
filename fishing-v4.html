@@ -609,7 +609,7 @@ function newState(){
     castsLeft:CASTS, score:0, money:0, earned:0, puCount:0,
     lvl:{}, tag:{ fire:0, water:0, wind:0, earth:0 }, elem:{},
     syn:new Set(), picks:[], legendSeen:0, freeGiven:0, forcePU:0, legendForce:0,
-    slotMax:4, relicMax:2, tradeMax:3, tradeDone:{},
+    slotMax:4, relicMax:2, tradeMax:3, tradeDone:{}, evtDone:{},
     bossSeen:0, bossGot:0, stage:STAGES[0], market:MARKETS[0], stageArea:1,
     pend:{ fish:0, chest:0, ring:0, scoreAdd:0, pull:0 },
     // 称号用の記録
@@ -661,9 +661,10 @@ function recompute(){
   s.pull = Math.min(PULL_CAP,
     lv('pull') + lv('pullBig')*2 + (on('wind6') ? 1 : 0) + s.pend.pull);
 
+  const ak = 0.45 + 0.55*s.stageArea;
   s.regen = lv('desper') ? 0
           : Math.round((FISH_REGEN + lv('fish')*3 + (lv('fishBig')?10:0) + waterR)
-                       * allM * (lv('chibi') ? 1.8 : 1));
+                       * allM * (lv('chibi') ? 1.8 : 1) * ak);
 
   s.chestTarget = Math.min(16, Math.round((BASE_CHEST + lv('chest') + earthC + (lv('wildBox')?3:0))
                   * (lv('chest3') ? 3 : 1) * allM));
@@ -675,7 +676,7 @@ function recompute(){
               * (lv('chibi')?1.5:1) * (lv('wild')?1.8:1) * (lv('quick')?1.7:1);
 
   s.rankP = lv('rank')*0.12 + lv('deep')*0.05 + (on('earth6') ? 0.30 : 0) + (lv('sink') ? 0.20 : 0);
-  s.fishScale = (0.5 + 0.5*s.stageArea) * (lv('chibi') ? 1.8 : 1);
+  s.fishScale = ak * (lv('chibi') ? 1.8 : 1);
   s.cursorSpd = CURSOR_SPD * (lv('quick') ? 1.8 : 1);
   s.dropSpd   = DROP_SPD   * (lv('sink')  ? 1.5 : 1);
   return [...s.syn].filter(id=>!before.has(id));
@@ -739,8 +740,12 @@ function spawnSchool(limit, forceRank, atX, atY){
   return made;
 }
 const aliveFish = ()=>fishPool.reduce((a,f)=>a+(f.alive&&!f.boss&&!f.rare?1:0),0);
+/* せまいステージは 魚の上限も湧きも しぼる。
+   そうしないと 天空の雲海のような小さい海が むちゃくちゃ濃くなる */
+const areaK   = ()=>0.45 + 0.55*st.stageArea;
+const fishCap = ()=>Math.round(FISH_CAP * areaK());
 function addFish(n, atX, atY){
-  let room = Math.min(n, FISH_CAP - aliveFish()), guard = 0;
+  let room = Math.min(n, fishCap() - aliveFish()), guard = 0;
   while (room > 0 && guard++ < 600){
     const made = spawnSchool(room, undefined, atX, atY);
     if (!made) { if (guard > 60) break; continue; }
@@ -802,8 +807,11 @@ function flushPendSpawns(){
   recompute();
 }
 
-function prepareOcean(){
-  const n = castNo(), ev = CHANCE[n];
+/* その投かぎりのイベント。1投につき1回だけ走らせる。
+   （パワーアップを買うたびに startCast が呼ばれるので、
+     ここを分けないと 魚群も大漁タイムも 何度でも湧いてしまう） */
+function runCastEvents(n){
+  const ev = CHANCE[n];
   if (TRADE_CASTS.includes(n)) spawnRare(3);
   if (ev === 'school'){
     const t = 0.2 + Math.random()*(maxT()-0.4), b = bounds(t);
@@ -821,6 +829,9 @@ function prepareOcean(){
     }
     banner('さいごの 大漁タイム！', ''); sfx.boss();
   }
+}
+/* 毎回やってよい ならし（何度呼ばれても増えつづけない） */
+function topUpOcean(){
   let m = aliveFish();
   if (m < FISH_FLOOR){ addFish(FISH_FLOOR-m); banner('潮が かわった','魚が もどってきた'); }
   let ch = chestPool.reduce((a,c)=>a+(c.alive?1:0),0);
@@ -839,16 +850,18 @@ let held = false, resultTxt = null, bannerTxt = null;
 /* 投の開始。かけひきタイムなら先にそれを出す */
 function beginCast(){
   const n = castNo();
+  // かけひきタイム → その投のイベント → 狙い、の順。どちらも1投1回だけ
   if (TRADE_CASTS.includes(n) && !st.tradeDone[n] && tradePool().length >= 1){
     st.tradeDone[n] = 1; openTrade(); return;
   }
+  if (!st.evtDone[n]){ st.evtDone[n] = 1; runCastEvents(n); }
   startCast();
 }
 function startCast(){
   phase='aim'; lure.active=false;
   const b = bounds(0) || [WATER_L, WATER_R];
   cursor.x = (b[0]+b[1])/2; cursor.dir = 1;
-  prepareOcean(); updatePUBtn();
+  topUpOcean(); updatePUBtn();
 }
 function onPress(){
   audioUnlock();
