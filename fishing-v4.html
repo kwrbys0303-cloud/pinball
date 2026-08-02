@@ -1921,31 +1921,45 @@ const RANK_TH = [
 ];
 function rankOf(sc){ for (const r of RANK_TH) if (sc >= r[0]) return r; return RANK_TH[RANK_TH.length-1]; }
 
+/* 称号は「ヌシ」「できごと」「遊びかた」の3カテゴリから1つずつ選ぶ。
+   ひとつの表から上から2つ取ると、毎回おなじ組み合わせになってしまう */
 function titlesOf(){
   const s = st, out = [];
   const maxedN = CARDS.filter(c=>c.slot==='b' && c.max>1 && isMaxed(c)).length;
   const tradeN = usedIn('t'), legN = usedIn('l');
   const topEl  = Math.max(...ELS.map(k=>s.tag[k]));
   const topKey = ELS.find(k=>s.tag[k]===topEl);
-  const cand = [
-    [s.bossGot,                       '🐉 ヌシハンター'],
-    [s.bossSeen && !s.bossGot,        '😭 ヌシに にげられた人'],
-    [s.rec.maxCatch>=50,              '🕸 一網打尽の達人'],
-    [s.rec.rare>=5,                   '✨ 星をつかんだ人'],
-    [tradeN>=3,                       '😈 かけひきの鬼'],
-    [legN>=2,                         '🍀 もってる人'],
-    [maxedN>=3,                       '🔨 一点集中の職人'],
-    [s.rec.chest>=10,                 '🏴‍☠️ トレジャーハンター'],
-    [topEl>=6,                        `${EL[topKey].ic} ${EL[topKey].n}の申し子`],
-    [Math.min(...ELS.map(k=>s.tag[k]))>=3, '🌈 オールラウンダー'],
-    [s.rec.temp>=5,                   '⏱ その場しのぎの天才'],
-    [s.rec.tuna>=10,                  '🐋 マグロ漁師'],
-    [Math.round(s.radius)>=200,       '🌊 海をのみこむ者'],
-    [s.score>0 && s.rec.lastScore/s.score>=0.6, '🚀 ラストスパート'],
-    [s.money>=5000,                   '💰 ためこみ屋'],
-    [tradeN===0,                      '🛡 安全運転'],
+  const minEl  = Math.min(...ELS.map(k=>s.tag[k]));
+
+  const nushi = [
+    [s.bossGot,                '🐉 ヌシハンター'],
+    [s.bossSeen && !s.bossGot, '😭 ヌシに にげられた人'],
   ];
-  for (const [ok,nm] of cand){ if (ok && out.length<2) out.push(nm); }
+  const event = [                                   // できごと（めずらしい順）
+    [s.rec.rare>=6,            '✨ 星をつかんだ人'],
+    [s.rec.maxCatch>=120,      '🕸 一網打尽の達人'],
+    [s.rec.tuna>=15,           '🐋 マグロ漁師'],
+    [s.rec.chest>=12,          '🏴‍☠️ トレジャーハンター'],
+    [legN>=2,                  '🍀 もってる人'],
+    [s.score>0 && s.rec.lastScore/s.score>=0.45, '🚀 ラストスパート'],
+    [s.rec.maxCatch>=60,       '🎏 大漁ずき'],
+    [s.money>=20000,           '💰 ためこみ屋'],
+  ];
+  const style = [                                   // 遊びかた
+    [minEl>=3,                 '🌈 オールラウンダー'],
+    [topEl>=6,                 `${EL[topKey].ic} ${EL[topKey].n}の申し子`],
+    [maxedN>=3,                '🔨 一点集中の職人'],
+    [Math.round(s.radius)>=220,'🌊 海をのみこむ者'],
+    [s.pull>=6,                '🧲 引きよせマスター'],
+    [s.rec.temp>=5,            '⏱ その場しのぎの天才'],
+    [tradeN>=3,                '😈 かけひきの鬼'],
+    [tradeN===0,               '🛡 安全運転'],
+    [s.dual,                   '🎣 二刀流の使い手'],
+  ];
+  for (const list of [nushi, event, style]){
+    const hit = list.find(x=>x[0]);
+    if (hit) out.push(hit[1]);
+  }
   if (!out.length) out.push('🎣 つりびと');
   return out;
 }
