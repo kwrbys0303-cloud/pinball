@@ -360,9 +360,9 @@ const DROP_SPD    = 300;
 const PULL_RING   = 100;
 const PULL_CAP    = 8;
 const BOSS_SCORE  = 2600;
-const RARE_SCORE  = 1200;
+const RARE_SCORE  = 600;
 /* 宝箱・1回きりカードの「つぎの1投」ぶん 上限（かけ算をやめて足し算に） */
-const PEND_CAP = { ring:120, scoreAdd:3.0, fish:150, pull:6 };
+const PEND_CAP = { ring:120, scoreAdd:2.0, fish:150, pull:6 };
 
 const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
 const $ = id=>document.getElementById(id);
@@ -423,12 +423,14 @@ const STAGES = [
       star = 高くなるランク / dull = 安くなるランク
       ステージの深さと相性の合うものだけ抽選する
    ============================================================ */
+/* 低ランクほど倍率を高くしないと狙う意味が出ないが、
+   数の多いイワシに大きな倍率をかけると スコア全体が跳ねるので控えめに */
 const MARKETS = [
-  { nm:'イワシの下剋上',   star:0, dull:4, mul:4.0 },
-  { nm:'アジのむれ祭り',   star:1, dull:3, mul:3.2 },
-  { nm:'タイのおでまし',   star:2, dull:0, mul:2.6 },
-  { nm:'ブリ旋風',         star:3, dull:2, mul:2.2 },
-  { nm:'マグロの時代',     star:4, dull:1, mul:2.0 },
+  { nm:'イワシの下剋上',   star:0, dull:4, mul:2.6 },
+  { nm:'アジのむれ祭り',   star:1, dull:3, mul:2.4 },
+  { nm:'タイのおでまし',   star:2, dull:0, mul:2.0 },
+  { nm:'ブリ旋風',         star:3, dull:2, mul:1.8 },
+  { nm:'マグロの時代',     star:4, dull:1, mul:1.7 },
 ];
 const MARKET_OK = { shallow:[0,1,2], mid:[0,1,2,3,4], deep:[2,3,4] };
 const mkMul = r => r===st.market.star ? st.market.mul : r===st.market.dull ? 0.45 : 1;
@@ -671,9 +673,16 @@ function recompute(){
   s.chestTimes = 1 + lv('lucky') + (on('earth6') ? 1 : 0) + (lv('wildBox') ? 1 : 0);
   s.coinMult   = (earthC ? 2 : 1) * (on('earth6') ? 1.5 : 1);
 
+  // トレードオフのスコア倍率は 3枠ぶん掛け合わさると ×7 を超えるので合計に上限
+  let tMul = 1;
+  if (lv('focus'))  tMul *= 1.9;
+  if (lv('desper')) tMul *= 2.2;
+  if (lv('chibi'))  tMul *= 1.5;
+  if (lv('wild'))   tMul *= 1.8;
+  if (lv('quick'))  tMul *= 1.7;
+  s.tradeMul = Math.min(3.0, tMul);
   s.scoreMult = (1 + lv('score')*0.18) * fireM * allM * (1 + s.pend.scoreAdd)
-              * (lv('rich')?2:1) * (lv('focus')?1.9:1) * (lv('desper')?2.2:1)
-              * (lv('chibi')?1.5:1) * (lv('wild')?1.8:1) * (lv('quick')?1.7:1);
+              * (lv('rich')?2:1) * s.tradeMul;
 
   s.rankP = lv('rank')*0.12 + lv('deep')*0.05 + (on('earth6') ? 0.30 : 0) + (lv('sink') ? 0.20 : 0);
   s.fishScale = ak * (lv('chibi') ? 1.8 : 1);
@@ -687,7 +696,8 @@ function applySynBurst(ids){
     if (id === 'water6') addFish(120);
   }
 }
-function puCost(){ return Math.round(40 * Math.pow(1.6, st.puCount) * (lv('pricey') ? 1.6 : 1)); }
+// 1.6 だと後半に20回以上買えてしまい 選ぶ意味が薄れるので 1.72 に
+function puCost(){ return Math.round(40 * Math.pow(1.72, st.puCount) * (lv('pricey') ? 1.6 : 1)); }
 const cardCost = c => c.t==='x' ? Math.round(puCost()*0.55) : puCost();
 
 /* ============================================================
