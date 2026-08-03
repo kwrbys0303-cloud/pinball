@@ -2385,10 +2385,12 @@ const screen=$('screen'), scTtl=$('scTtl'), scBody=$('scBody'),
 
 /* 自動プレイ（12投完走）の実測分布から決めた。
    適当に投げて 9〜11万、狙って投げて 20〜53万 あたりに落ちる */
+/* 難易度を上げた v6 の実測分布から。適当に投げて D〜B、
+   狙って S、うまく噛み合った最終投が爆発すると SSS */
 const RANK_TH = [
-  [500000,'SSS','#ff7ad0'], [300000,'SS','#ffd76a'], [180000,'S','#ffe9a8'],
-  [100000,'A','#8fe0a0'], [55000,'B','#7fd0ff'], [28000,'C','#9fb8d0'],
-  [12000,'D','#a0a8b0'], [0,'E','#8a8f96'],
+  [700000,'SSS','#ff7ad0'], [380000,'SS','#ffd76a'], [190000,'S','#ffe9a8'],
+  [110000,'A','#8fe0a0'], [55000,'B','#7fd0ff'], [26000,'C','#9fb8d0'],
+  [10000,'D','#a0a8b0'], [0,'E','#8a8f96'],
 ];
 function rankOf(sc){ for (const r of RANK_TH) if (sc >= r[0]) return r; return RANK_TH[RANK_TH.length-1]; }
 
