@@ -482,7 +482,7 @@ const FISH_FLOOR  = 40;
 const FISH_CAP    = 620;
 const BASE_CHEST  = 3;
 const MONEY_RATE  = 0.6;
-const DAILY_WAGE  = 25;            // 1投ごとの日当。釣れなくてもビルドは組める
+const DAILY_WAGE  = 40;            // 1投ごとの日当。釣れなくてもビルドは組める
 const FISH_UP_MAX = 6;             // 魚が強くなる回数の上限
 
 const CURSOR_SPD  = 420;
@@ -2477,12 +2477,12 @@ const screen=$('screen'), scTtl=$('scTtl'), scBody=$('scBody'),
 
 /* 自動プレイ（12投完走）の実測分布から決めた。
    適当に投げて 9〜11万、狙って投げて 20〜53万 あたりに落ちる */
-/* 難易度を上げた v6 の実測分布から。適当に投げて D〜B、
-   狙って S、うまく噛み合った最終投が爆発すると SSS */
+/* 魚も強くなる v7 の実測分布から。実測は 6千／7.5千／3.0万／3.9万／16.2万。
+   ヌシ捕獲は5戦2回まで下がり、難易度は狙いどおりの水準になった */
 const RANK_TH = [
-  [700000,'SSS','#ff7ad0'], [380000,'SS','#ffd76a'], [190000,'S','#ffe9a8'],
-  [110000,'A','#8fe0a0'], [55000,'B','#7fd0ff'], [26000,'C','#9fb8d0'],
-  [10000,'D','#a0a8b0'], [0,'E','#8a8f96'],
+  [400000,'SSS','#ff7ad0'], [200000,'SS','#ffd76a'], [110000,'S','#ffe9a8'],
+  [60000,'A','#8fe0a0'], [32000,'B','#7fd0ff'], [16000,'C','#9fb8d0'],
+  [7000,'D','#a0a8b0'], [0,'E','#8a8f96'],
 ];
 function rankOf(sc){ for (const r of RANK_TH) if (sc >= r[0]) return r; return RANK_TH[RANK_TH.length-1]; }
 
