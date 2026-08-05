@@ -1,7 +1,24 @@
 <!DOCTYPE html>
 <!--
-  ツリツリバースト 〜さかなの逆襲〜  v8
+  ツリツリバースト 〜さかなの逆襲〜  v9
   ============================================================
+  v8 → v9 で変えたこと
+  - 絵の導入。魚5種・ヌシ3種・レア魚3種・岩3色・海藻・サンゴ・雲・宝箱・ルアーを
+    切りぬいたスプライトに差しかえ（合計約140KB）。使う大きさに1回だけ焼いて貼るので
+    これまでの図形描画より むしろ軽い
+  - 画面を 480x800 → 480x920 に。横幅で拡大率が決まるので見た目は変わらず、
+    今まで上下に余っていた黒帯を使う
+  - 上部に「さかな時価」パネル。5ランク＋出現中のレア魚・ヌシの、倍率をぜんぶ
+    反映した いまの点数を常時表示。倍率が変わると2秒光る
+  - いちばん下に「ひとこと」バー。アドバイス・雑学・雑談の計79個を
+    シャッフル袋方式で5秒ごとに入れかえる
+  - ハイスコア上位10件。リザルトで新記録の行が上から割りこんで金色に光る。
+    保存はセーブコード（localStorageが使える環境ならそちらにも）
+  - 1投ごとのリザルトを表に。「〇点 × 〇匹 = 〇点」
+  - バグ修正：CSSの迷子が #legend ルールを丸ごと殺していた／レジェンド表示が
+    タップで消えない／レア魚の登場表示に undefined／開始画面がスクロールできない／
+    チュートリアルが消えない
+  ------------------------------------------------------------
   v7 → v8 で変えたこと
   - 告知ウィンドウを 1本の待ち行列に統一。シナジーと魚の強化が
     かさなって読めなくなる問題を解消（タップで飛ばせる）
@@ -312,6 +329,7 @@
   .bRow .bi { font-size:18px; width:26px; text-align:center; }
   .bRow .bn { flex:1; }
   .bRow .bl { font-size:11px; opacity:.75; }
+  .stF { width:26px; height:14px; object-fit:contain; vertical-align:middle; }
   .statGrid { display:grid; grid-template-columns:1fr 1fr; gap:4px 12px; font-size:12px; }
   .statGrid div { display:flex; justify-content:space-between;
     border-bottom:1px dotted rgba(255,255,255,.14); padding:3px 0; }
@@ -869,11 +887,15 @@ function buildObjs(){
   let used = 0;
   for (let made=0, guard=0; made<nr && guard<220; guard++){
     const sc = (0.78 + Math.random()*0.5) * szK;
-    const w = K.rw*sc, h = w*rAsp;
     const t = 0.14 + Math.random()*Math.max(0.01, maxT()-0.22);
     const y = tToY(t), b = bounds(t);
-    if (!b || b[1]-b[0] < w + 72) continue;
-    const x = b[0] + w/2 + 26 + Math.random()*(b[1]-b[0]-w-52);
+    if (!b) continue;
+    const room = b[1]-b[0];
+    // せまい海では 岩を ちぢめて 置く（岩が1つも出ないと 遊びが 変わってしまう）
+    let w = Math.min(K.rw*sc, room - 34);
+    if (w < 30) continue;
+    const h = w*rAsp;
+    const x = b[0] + w/2 + 14 + Math.random()*Math.max(1, room - w - 28);
     if (st.objs.some(o=>o.solid && Math.abs(o.x-x) < (o.w+w)*0.58
                                 && Math.abs(o.y-y) < (o.h+h)*0.58)) continue;
     const a = Math.PI*w*h/4;
@@ -2787,7 +2809,7 @@ function buildSheet(list, opt){
   }
   passBtn.style.display = 'none';   // 効果がおいしすぎて断る理由がないので 見おくるは廃止
   renderSlots(); renderElGauge();
-  modal.classList.add('show');
+  hideTut(); modal.classList.add('show');
   if (trade && !st.tut.tdPick){ st.tut.tdPick = 1;
     setTimeout(()=>showTut('よいこと と わるいこと。<br>どれか 1つ えらぼう', cardsEl, false), 30); }
   else if (!trade && !st.tut.puPick){ st.tut.puPick = 1;
@@ -3044,13 +3066,16 @@ tdBtn.addEventListener('pointerdown', e=>{
    ============================================================ */
 const statusSheet=$('status'), stBody=$('stBody'), stSub=$('stSub');
 function openStatus(){
+  hideTut();
   const s = st; let h = '';
   h += `<div class="stSec">ステージ　${s.stage.ic} ${s.stage.nm}</div>
         <div style="font-size:12px;opacity:.8">${s.stage.note}</div>`;
   h += `<div class="stSec">さかな市場　${s.market.nm}</div><div class="statGrid">`;
   RANKS.forEach((R,i)=>{
-    const tag = i===s.market.star ? '<b>★ たかい</b>' : i===s.market.dull ? '▼ やすい' : 'ふつう';
-    h += `<div><span>${R.e} ${R.n}</span><span>${tag}</span></div>`;
+    const mk = i===s.market.star ? '★' : i===s.market.dull ? '▼' : '';
+    const col = i===s.market.star ? '#ffe27a' : i===s.market.dull ? '#8ea2b0' : '#fff';
+    h += `<div><span><img class="stF" src="${SPR_SRC[FISH_SPR[i]]}" alt=""> ${R.n}</span>`
+       + `<span style="color:${col}"><b>${nowScore(i).toLocaleString()}点</b> ${mk}</span></div>`;
   });
   h += '</div>';
   h += '<div class="stSec">シナジー</div>';
@@ -3248,12 +3273,13 @@ const screen=$('screen'), scTtl=$('scTtl'), scBody=$('scBody'),
 
 /* 自動プレイ（12投完走）の実測分布から決めた。
    適当に投げて 9〜11万、狙って投げて 20〜53万 あたりに落ちる */
-/* v8 の実測分布から引き直した。6戦で 1.96万／3.22万／4.62万／5.41万／17.7万／33.0万。
-   デカい魚の点数と「強くなった魚は1.4倍」で 天井が上がったぶん 全体を上へ */
+/* v9 の実測分布から引き直した。8戦で
+   5.5千／1.4万／3.0万／3.8万／5.6万／6.7万／8.1万／16.4万。
+   岩が大きくなって かくれる魚が ふえたぶん 全体が すこし下がった */
 const RANK_TH = [
-  [420000,'SSS','#ff7ad0'], [260000,'SS','#ffd76a'], [150000,'S','#ffe9a8'],
-  [85000,'A','#8fe0a0'], [42000,'B','#7fd0ff'], [18000,'C','#9fb8d0'],
-  [7000,'D','#a0a8b0'], [0,'E','#8a8f96'],
+  [380000,'SSS','#ff7ad0'], [220000,'SS','#ffd76a'], [130000,'S','#ffe9a8'],
+  [72000,'A','#8fe0a0'], [36000,'B','#7fd0ff'], [15000,'C','#9fb8d0'],
+  [6000,'D','#a0a8b0'], [0,'E','#8a8f96'],
 ];
 function rankOf(sc){ for (const r of RANK_TH) if (sc >= r[0]) return r; return RANK_TH[RANK_TH.length-1]; }
 
