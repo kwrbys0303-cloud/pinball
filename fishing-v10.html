@@ -157,6 +157,16 @@
     font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; color:#fff;
     user-select:none; touch-action:none; }
   #wrap  { position:fixed; inset:0; overflow:hidden; }
+  /* スマホを 横向きに したとき */
+  #rotate { position:fixed; inset:0; z-index:900; display:none;
+    background:#05121f; flex-direction:column; align-items:center; justify-content:center;
+    gap:14px; text-align:center; padding:20px; }
+  body.landscape #rotate { display:flex; }
+  body.landscape #wrap  { visibility:hidden; }
+  #rotate .ri { font-size:54px; animation:rotSwing 1.6s ease-in-out infinite; }
+  #rotate .rt { font-size:17px; font-weight:bold; color:#dff2ff; line-height:1.6; }
+  #rotate .rs { font-size:12.5px; color:#8fb6cf; }
+  @keyframes rotSwing { 0%,100%{transform:rotate(-18deg)} 50%{transform:rotate(18deg)} }
   #stage { position:absolute; left:0; top:0; width:480px; height:920px; transform-origin:top left; }
   canvas#cv { position:absolute; inset:0; width:480px; height:920px; border-radius:14px; }
   .ov { position:absolute; }
@@ -571,6 +581,9 @@
 </style>
 </head>
 <body>
+<div id="rotate"><div class="ri">📱</div>
+  <div class="rt">たてに して あそんでね</div>
+  <div class="rs">この ゲームは たて画面 せんようです</div></div>
 <div id="wrap"><div id="stage">
   <canvas id="cv" width="480" height="920"></canvas>
 
@@ -3849,14 +3862,38 @@ window.addEventListener('keydown', e=>{
 window.addEventListener('keyup', e=>{ if(e.code==='Space'||e.code==='Enter') onRelease(); });
 document.addEventListener('touchmove', e=>e.preventDefault(), { passive:false });
 
+/* 画面ぴったりに 合わせる。
+   iPhone の Safari は アドレスバーの ぶんだけ innerHeight が 大きく出るので、
+   visualViewport が あれば その小さいほうを 使う。
+   （埋めこみ表示では visualViewport が 外がわを さすことがあるため min をとる）
+   文字を 打っているとき＝キーボードが 出ているときは 動かさない。
+   ここで 作りなおすと セーブコードの 入力欄が とびはねる */
+function viewSize(){
+  const vv = window.visualViewport;
+  const typing = document.activeElement &&
+    /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName);
+  let w = window.innerWidth, h = window.innerHeight;
+  if (vv && !typing){ w = Math.min(w, vv.width); h = Math.min(h, vv.height); }
+  return [w, h];
+}
 function resize(){
-  const iw=window.innerWidth, ih=window.innerHeight;
+  const [iw, ih] = viewSize();
   curScale = Math.min(iw/W, ih/H);
   stage.style.transform =
     `translate(${(iw-W*curScale)/2}px, ${(ih-H*curScale)/2}px) scale(${curScale})`;
+  // スマホを 横向きに したときだけ「たてに してね」を 出す。
+  // 高さで 見わけたうえに 指でさわる機械かどうかも 見る。
+  // パソコンの 横長ウィンドウや 埋めこみ表示で まちがって 出さないため
+  const w = window.innerWidth, h = window.innerHeight;
+  const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+  document.body.classList.toggle('landscape', touch && w > h && h < 520);
 }
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', ()=>setTimeout(resize,120));
+if (window.visualViewport){
+  visualViewport.addEventListener('resize', resize);
+  visualViewport.addEventListener('scroll', resize);
+}
 resize();
 $('screen').style.backgroundImage = `url(${IMG_SCENE})`;
 $('roll').style.backgroundImage   = `url(${IMG_SCENE})`;
