@@ -663,6 +663,9 @@ const RARES = [
 ];
 const RARE_PRIZE = '釣れたら かけひき券ゲット！';
 const DEPTH_PREF = [0.10, 0.27, 0.47, 0.68, 0.87];
+/* 逃げ足の ぜんたい調整。ねらう たのしさが 減っていたので 少しだけ ゆっくりに。
+   ここだけ 直せば ぜんぶに きく */
+const FLEE_K = 0.9;
 
 /* ============================================================
    2. ステージ（海の形＋背景）
@@ -750,6 +753,16 @@ function seaArea(k, wide){
   let a = 0;
   for (let t=0; t<1; t+=0.01){ const b = nb(k,t,wide); if (b) a += (b[1]-b[0])*0.01; }
   return a;
+}
+/* 海の いちばん深い ところの y。
+   ルアーは 壁を すべって おりるので、その x の 真下ではなく
+   海ぜんたいの 底まで とどく */
+function seaBottomY(){
+  for (let t = maxT(); t > 0.06; t -= 0.012){
+    const b = bounds(t);
+    if (b && b[1]-b[0] > 24) return tToY(t);
+  }
+  return tToY(maxT());
 }
 function floorT(x){
   const last = maxT();
@@ -840,8 +853,8 @@ function pushIntoSea(o){
 
 /* ============================================================
    4.5 海の中の オブジェクト
-   かくれ岩（solid）＝ うしろの魚は ワッカでも 帯でも 釣れない。
-                      ただし「引きよせ」だけは 岩ごしに とどく。
+   岩（solid）＝ 見た目だけ。v10.2 から 岩の うしろの 魚も ふつうに 釣れる
+                 （岩ごしに 釣れないのが いちばんの ストレス だったため）。
    かざり        ＝ 見た目だけ。海藻・サンゴ・雲
    ============================================================ */
 /* 岩と かざりは 絵をそのまま 貼るので、たて幅は 絵の比率から 決める。
@@ -860,7 +873,7 @@ const OBJ_SET = {
 function buildObjs(){
   st.objs = [];
   const K = OBJ_SET[st.stage.id] || OBJ_SET.shore;
-  const szK = [0,1,2,3,4].some(r=>st.fmod.rock[r]) ? 1.15 : 1;     // 岩かくれを おぼえたら 岩も大きく
+  const szK = 1;
   const nr  = K.nr + (st.fmod.murky ? 3 : 0);                      // にごったら 岩も ふえる
   const maxArea = st.stageArea * SEA_W * WATER_H * 0.07;           // 海の7%まで
   const rAsp = sprAspect(K.rock), dAsp = sprAspect(K.deco);
@@ -892,26 +905,6 @@ function buildObjs(){
                    w, h, solid:0, spr:K.deco, sd:Math.random()*6.28 });
   }
 }
-/* いちばん近い 岩（range内） */
-function nearestRock(x, y, range){
-  let best = null, bd = range*range;
-  for (const o of (st.objs||[])){
-    if (!o.solid) continue;
-    const d = (o.x-x)*(o.x-x) + (o.y-y)*(o.y-y);
-    if (d < bd){ bd = d; best = o; }
-  }
-  return best;
-}
-/* この座標は 岩のうしろか？ */
-function hiddenBy(x, y){
-  const O = st.objs; if (!O) return null;
-  for (const o of O){
-    if (!o.solid) continue;
-    const dx = (x-o.x)/(o.w*0.5), dy = (y-o.y)/(o.h*0.5);
-    if (dx*dx + dy*dy <= 1) return o;
-  }
-  return null;
-}
 
 /* ============================================================
    5. パワーアップ定義（属性タグは 全部 +1）
@@ -938,7 +931,14 @@ const CARDS = [
   /* ---- レジェンド（おたから枠）---- */
   { id:'dual',   t:'l', slot:'l', max:1, ic:'🎣', nm:'ルアー二刀流',   ds:'ルアーが 左右に2本 おちる！' },
   { id:'fishBig',t:'l', slot:'l', max:1, ic:'🌐', nm:'サカナだいはんらん', ds:'魚が ドカンと +60匹。毎投も +10匹！' },
-  { id:'chest3', t:'l', slot:'l', max:1, ic:'🏴‍☠️', nm:'かいぞくのたからばこ', ds:'たからばこが 3倍！' },
+  { id:'chest3', t:'l', slot:'l', max:1, ic:'🏴‍☠️', nm:'かいぞくのたからばこ',
+    ds:'たからばこが 3倍！さらに <b>パワーアップ2回ぶんを その場で</b> ひける！' },
+  { id:'purse',  t:'l', slot:'l', max:1, ic:'👛', nm:'めがみのさいふ',
+    ds:'<b>ムリョウ！</b> いまの お金が 3倍。これから もらう お金も 1.5倍！' },
+  { id:'pray',   t:'l', slot:'l', max:1, ic:'🔱', nm:'かいじんのいのり',
+    ds:'いまの スコアが 2倍。これから もらう スコアも 1.5倍！' },
+  { id:'band',   t:'l', slot:'l', max:1, ic:'🎽', nm:'たつじんのハチマキ',
+    ds:'これから パワーアップの ねだんが <b>ずっと 半分</b>！' },
   { id:'ring',   t:'l', slot:'l', max:1, ic:'🐉', nm:'りゅうじんのワッカ',   ds:'ワッカが ドカンと +70！' },
   { id:'rich',   t:'l', slot:'l', max:1, ic:'💰', nm:'大富豪',         ds:'スコアとお金が まるごと 2倍！' },
   /* ---- トレードオフ（かけひき枠 / 良い効果 → 悪い効果 の順）---- */
@@ -1010,9 +1010,9 @@ const FISH_UPS = [
     s:r=>'そっくりの ニセモノが 出る（点数は 半分）',
     ap:(m,r,k)=>{ m.clone[r]=1; } },
   /* ---- ここから超パワーアップ。タイ以上（ランク2〜）だけに つく ---- */
-  { rare:1, min:2, ic:'🪨', k:'rock', t:r=>`${RANKS[r].n}が 岩かくれを おぼえた！`,
-    s:r=>'岩の うしろに かくれて ワッカを よける！',
-    ap:(m,r,k)=>{ m.rock[r]=1; m.fsp[r] *= 1 + 0.30*k; } },
+  { rare:1, min:2, ic:'💨', k:'dash2', t:r=>`${RANKS[r].n}が 全力しっそうを おぼえた！`,
+    s:r=>'ルアーを 見つけると ものすごい 速さで にげる！',
+    ap:(m,r,k)=>{ m.fsp[r] *= 1 + 0.55*k; } },
   { rare:1, min:2, ic:'✨', k:'blink',t:r=>`${RANKS[r].n}が 点めつを おぼえた！`,
     s:r=>'ときどき すがたを けして つかまらない！',
     ap:(m,r,k)=>{ m.blink[r]=1; } },
@@ -1032,7 +1032,7 @@ const FISH_TRADES = [
 function newFmod(){
   return { fsp:[1,1,1,1,1], det:[1,1,1,1,1], lag:[1,1,1,1,1], mult:[1,1,1,1,1],
            nos:[0,0,0,0,0], deep:[0,0,0,0,0], tele:[0,0,0,0,0], clone:[0,0,0,0,0],
-           king:[0,0,0,0,0], rock:[0,0,0,0,0], blink:[0,0,0,0,0],
+           king:[0,0,0,0,0], blink:[0,0,0,0,0],
            allFsp:1, watch:0, murky:0, done:[[],[],[],[],[]] };
 }
 function doFishUp(){
@@ -1051,7 +1051,6 @@ function doFishUp(){
   const mega = !!u.rare;
   u.ap(m, r, r===0 ? 0.5 : 1);            // イワシは 効果半分
   m.done[r].push(u.k);
-  if (u.k === 'rock') buildObjs();         // 岩かくれ＝岩が 大きくなる
   m.mult[r] = Math.min(FISH_MULT_CAP, m.mult[r] * FISH_MULT);   // 強い魚ほど おいしい（上限つき）
   notify({ kind: mega ? 'mega' : 'fish', w:'さかなの ぎゃくしゅう',
     img: FISH_SPR[r], ic: u.ic, title: u.t(r), sub: u.s(r),
@@ -1210,7 +1209,8 @@ function newState(){
     // 称号用の記録
     rec:{ maxCatch:0, chest:0, rare:0, tuna:0, lastScore:0, temp:0 },
     radius:0, hlineH:0, vlineW:0, xlineW:0, pull:0, regen:FISH_REGEN,
-    chestTarget:BASE_CHEST, chestTimes:1, coinMult:1, scoreMult:1, rankP:0, dual:0,
+    chestTarget:BASE_CHEST, chestTimes:1, coinMult:1, moneyMult:1, scoreMult:1, rankP:0, dual:0,
+    freePU:0,                       // すぐに ひける パワーアップの 残り回数
     fishScale:1, cursorSpd:CURSOR_SPD, dropSpd:DROP_SPD,
   };
 }
@@ -1265,6 +1265,7 @@ function recompute(){
                   * (lv('chest3') ? 3 : 1) * allM));
   s.chestTimes = 1 + lv('lucky') + (on('earth6') ? 1 : 0) + (lv('wildBox') ? 1 : 0);
   s.coinMult   = (earthC ? 2.5 : 1) * (on('earth6') ? 1.2 : 1);
+  s.moneyMult  = lv('purse') ? 1.5 : 1;          // めがみのさいふ
 
   // トレードオフのスコア倍率は 3枠ぶん掛け合わさると ×7 を超えるので合計に上限。
   // v10：さいごのしょうぶ を 3.0倍にしたので 上限が 3.0 のままだと
@@ -1277,7 +1278,7 @@ function recompute(){
   if (lv('quick'))  tMul *= 1.7;
   s.tradeMul = Math.min(4.2, tMul);
   s.scoreMult = (1 + lv('score')*0.18) * fireM * allM * (1 + s.pend.scoreAdd)
-              * (lv('rich')?2:1) * s.tradeMul;
+              * (lv('rich')?2:1) * (lv('pray')?1.5:1) * s.tradeMul;
 
   s.rankP = lv('rank')*0.12 + lv('deep')*0.05 + (on('earth6') ? 0.40 : 0) + (lv('sink') ? 0.20 : 0);
   s.fishScale = ak * (lv('chibi') ? 1.8 : 1);
@@ -1292,8 +1293,10 @@ function applySynBurst(ids){
   }
 }
 // 初回を¥30にして序盤を底上げしつつ、カーブは1.8で 総回数を12〜14に絞る
-function puCost(){ return Math.round(30 * Math.pow(1.8, st.puCount) * (lv('pricey') ? 1.3 : 1)); }
-const cardCost = c => c.t==='x' ? Math.round(puCost()*0.55) : puCost();
+function puCost(){ return Math.round(30 * Math.pow(1.8, st.puCount)
+                     * (lv('pricey') ? 1.3 : 1) * (lv('band') ? 0.5 : 1)); }
+const cardCost = c => c.id==='purse' ? 0            // めがみのさいふは タダ
+                    : c.t==='x' ? Math.round(puCost()*0.55) : puCost();
 
 /* ============================================================
    9. スポーン
@@ -1424,7 +1427,7 @@ function gainTicket(){
   if (usedIn('t') + st.tickets < st.tradeMax){ st.tickets++; updateBtns(); return '🎫 かけひき券！'; }
   // あまった券は お金に。ただし値段カーブ（指数）に連動させると
   // 終盤に1枚数百万円になってしまうので、小判と同じ頭打ちの式にする
-  const g = Math.round(200 * Math.min(st.scoreMult,5) * st.coinMult);
+  const g = Math.round(200 * Math.min(st.scoreMult,5) * st.coinMult * st.moneyMult);
   st.money += g; return '¥'+g;
 }
 
@@ -1532,8 +1535,6 @@ function resolveCatch(){
   const pts = lurePoints(), got = [], gotC = [];
   for (const f of fishPool){
     if (!f.alive || f.caught || blinkPh(f)===2) continue;
-    // ★岩の うしろの 魚には ワッカも 帯も とどかない（引きよせ だけは とどく）
-    if (hiddenBy(f.x, f.y)){ f.miss = 0.9; continue; }
     for (const p of pts){
       const c = inCircle(f.x,f.y,p.x,p.y), b = p.band && inBands(f.x,f.y,p.x,p.y);
       if (c || b){ f.caught=true; f.byCircle=c; f.byBand=(!c&&b); f.tx=p.x; f.ty=p.y; got.push(f); break; }
@@ -1646,6 +1647,7 @@ function tally(){
   if (rareN){ sfx.rare(); msgs.push(gainTicket()); }   // レア魚は 1投につき 券1枚
 
   mo += DAILY_WAGE;                       // 今日の日当（スコアには入らない）
+  mo = Math.round(mo * st.moneyMult);
   st.score += sc; st.money += mo; st.earned += mo;
   st.castsDone++;
   st.rec.maxCatch = Math.max(st.rec.maxCatch, cnt);
@@ -1703,7 +1705,7 @@ function moveFish(f, dt){
 
   if (f.rare){                                  // レア魚：速いが 規則のある動き
     const R = st.rareType;
-    sp = R.spd;
+    sp = R.spd * FLEE_K;
     if (R.move === 'zig'){                      // ジグザグ：折れ点が多い
       f.wob += dt*5.2;
       f.y = f.homeY + (Math.asin(Math.sin(f.wob))/1.5708)*f.amp;
@@ -1718,7 +1720,7 @@ function moveFish(f, dt){
     } else {                                    // ふくらむと おそい
       f.puff += dt*1.35;
       const inflate = (Math.sin(f.puff)+1)/2;    // 0=しぼむ 1=ふくらむ
-      sp = R.spd * (0.18 + (1-inflate)*1.0);
+      sp = R.spd * FLEE_K * (0.18 + (1-inflate)*1.0);
       f.wob += dt*3.0; f.y = f.homeY + Math.sin(f.wob)*f.amp*0.6;
     }
   } else if (f.boss){
@@ -1741,12 +1743,8 @@ function moveFish(f, dt){
       else if (phase==='drop'){
         const d = Math.hypot(f.x-lure.x, f.y-lure.y);
         if (d < 165){
-          sp = B.fsp;
-          const rk = nearestRock(f.x, f.y, 230);   // ★ヌシは 岩に かくれたがる
-          if (rk && Math.abs(rk.x-f.x) > 6){
-            f.dir = rk.x > f.x ? 1 : -1;
-            f.homeY += (rk.y - f.homeY) * Math.min(1, dt*2.4);
-          } else f.dir = (f.x < lure.x) ? -1 : 1;
+          sp = B.fsp * FLEE_K;
+          f.dir = (f.x < lure.x) ? -1 : 1;
         }
       }
     }
@@ -1782,15 +1780,9 @@ function moveFish(f, dt){
                    f.homeY = tToY(tt); f.y = f.homeY; f.teled = 1;
                    burstParticles(f.x, f.y, 6, '#b6f0ff'); }
         }
-        sp = R.fsp * M.fsp[f.rank] * M.allFsp * wildK * (f.qk===2 ? 0.45 : 1);
-        const rk = M.rock[f.rank] ? nearestRock(f.x, f.y, 190) : null;
-        if (rk && Math.abs(rk.x-f.x) > 5){       // 岩かくれ：岩へ にげこむ
-          f.dir = rk.x > f.x ? 1 : -1;
-          f.homeY += (rk.y - f.homeY) * Math.min(1, dt*2.2);
-        } else {
-          f.dir = (f.x < lure.x) ? -1 : 1;
-          f.homeY += (f.homeY < lure.y ? -1 : 1) * sp * 0.42 * dt;
-        }
+        sp = R.fsp * FLEE_K * M.fsp[f.rank] * M.allFsp * wildK * (f.qk===2 ? 0.45 : 1);
+        f.dir = (f.x < lure.x) ? -1 : 1;
+        f.homeY += (f.homeY < lure.y ? -1 : 1) * sp * 0.42 * dt;
         if (M.watch) f.spread = 1;                        // 見はり番：まわりに伝える
       }
     } else { f.alert = 0; f.teled = 0; f.spread = 0; }
@@ -1912,17 +1904,22 @@ function update(dt){
   }
   else if (phase === 'drop'){
     lure.y += st.dropSpd * lure.vk * lure.dir * dt;
-    const t = yToT(lure.y), bot = Math.max(WATER_T + 60, tToY(floorT(lure.x)) - 8);
-    if (lure.dir > 0 && lure.y >= bot){        // 底で 折り返す
+    // 海のかたちに そって 壁を すべる。
+    // v10までは 海が せまくなった ところで 引き返していたので、
+    // 岸ぎわを ねらうと ほとんど もぐれなかった。いちばんの ストレスだった
+    const t = clamp(yToT(lure.y), 0, maxT());
+    const b = bounds(t);
+    if (b){
+      const m = 10, lo = b[0]+m, hi = b[1]-m;
+      lure.x = (lo > hi) ? (b[0]+b[1])/2 : clamp(lure.x, lo, hi);
+    }
+    const bot = seaBottomY() - 8;
+    if (lure.dir > 0 && lure.y >= bot){        // ほんとうの 海底で 折り返す
       lure.y = bot; lure.dir = -1; lure.laps++; lure.vk = Math.min(3.2, lure.vk*1.2);
       sfx.drop(); burstParticles(lure.x, lure.y, 5, '#cfe8ff');
     } else if (lure.dir < 0 && lure.y <= WATER_T + 8){   // 水面で 折り返す
       lure.y = WATER_T + 8; lure.dir = 1; lure.laps++; lure.vk = Math.min(3.2, lure.vk*1.2);
       sfx.drop(); burstParticles(lure.x, lure.y, 5, '#cfe8ff');
-    }
-    if (lure.dir > 0 && !inSea(lure.x, lure.y) && t > 0.02){
-      lure.y = Math.max(WATER_T+8, lure.y - 4); lure.dir = -1;
-      lure.laps++; lure.vk = Math.min(3.2, lure.vk*1.2); sfx.drop();
     }
   }
   else if (phase === 'reel'){
@@ -2059,7 +2056,6 @@ function draw(){
   ctx.globalAlpha = 0.93;
   for (const o of st.objs) if (o.solid) drawObj(o);       // 岩は 魚の まえ
   ctx.globalAlpha = 1;
-  drawHiddenMarks();
   if (st.fmod.murky){        // ★海が にごった：魚の「上」にかけるので ほんとうに 見えなくなる
     const mg = ctx.createLinearGradient(0, WATER_T + WATER_H*0.22, 0, tToY(maxT()));
     mg.addColorStop(0,'rgba(10,26,38,0)'); mg.addColorStop(.5,'rgba(7,20,30,.74)');
@@ -2135,7 +2131,7 @@ function draw(){
     ctx.beginPath(); ctx.moveTo(cursor.x,RAIL_Y+16); ctx.lineTo(cursor.x-11,RAIL_Y);
     ctx.lineTo(cursor.x+11,RAIL_Y); ctx.fill();
     ctx.strokeStyle='rgba(255,226,122,.28)'; ctx.setLineDash([5,7]); ctx.lineWidth=2;
-    ctx.beginPath(); ctx.moveTo(cursor.x,RAIL_Y+18); ctx.lineTo(cursor.x,tToY(floorT(cursor.x))); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cursor.x,RAIL_Y+18); ctx.lineTo(cursor.x,seaBottomY()); ctx.stroke();
     ctx.setLineDash([]);
   }
   drawHUD();
@@ -2264,38 +2260,6 @@ function drawObj(o){
   }
   ctx.restore();
 }
-/* 岩に かくれている 数を 岩ごとに ひとつだけ 見せる。
-   1匹ずつ 点線で 囲むと 画面が まっ赤に なって かえって 読めなかった */
-function drawHiddenMarks(){
-  const O = st.objs; if (!O || !O.length) return;
-  const cnt = new Map();
-  for (const f of fishPool){
-    if (!f.alive) continue;
-    const o = hiddenBy(f.x, f.y);
-    if (o) cnt.set(o, (cnt.get(o)||0) + 1);
-  }
-  if (!cnt.size) return;
-  ctx.save();
-  const pl = 0.6 + 0.4*Math.sin(performance.now()/260);
-  for (const [o, n] of cnt){
-    ctx.setLineDash([5,5]); ctx.lineWidth = 2;
-    ctx.strokeStyle = `rgba(255,120,120,${0.45+0.35*pl})`;
-    ctx.beginPath(); ctx.ellipse(o.x, o.y, o.w*0.5+5, o.h*0.5+5, 0, 0, 6.29); ctx.stroke();
-    ctx.setLineDash([]);
-    const by = o.y - o.h*0.5 - 9;
-    ctx.fillStyle = 'rgba(150,20,26,.92)';
-    ctx.beginPath();                    // roundRect が無い端末でも 出るように 手で描く
-    ctx.moveTo(o.x-11, by-9); ctx.lineTo(o.x+11, by-9);
-    ctx.arc(o.x+11, by, 9, -1.5708, 1.5708);
-    ctx.lineTo(o.x-11, by+9); ctx.arc(o.x-11, by, 9, 1.5708, -1.5708);
-    ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#ffd7d7'; ctx.font = 'bold 12px sans-serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('🐟' + n, o.x, by);
-  }
-  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-  ctx.restore();
-}
 function drawFish(f){
   const R = RANKS[f.rank], star = f.rank===st.market.star, dull = f.rank===st.market.dull;
   // ふくらむ演出は 4段階に丸める。連続で変えると そのたび新しい絵を焼いて
@@ -2320,7 +2284,7 @@ function drawFish(f){
   const spr = sprAt(FISH_SPR[f.rank], s*2.9, dull ? 'gray' : star ? 'star' : '', flip);
   // v9 では 岩かげの魚が globalAlpha を もどさず、そのあとの 魚まで
   // うすくなっていた。ここで きちんと 1匹ごとに 閉じる
-  let a = hiddenBy(f.x,f.y) ? 0.45 : 1;         // 岩の うしろ＝釣れない
+  let a = 1;
   if (dull) a *= 0.85;
   if (bp === 1) a *= 0.35 + 0.65*Math.abs(Math.sin(performance.now()/45));   // 予告のチカチカ
   else if (f.miss > 0) a *= 0.55 + Math.sin(f.miss*40)*0.3;
@@ -2521,7 +2485,6 @@ function drawHUD(){
    ============================================================ */
 const TALKS = [
   /* --- 💡 あそび方の アドバイス --- */
-  ['a','岩の うしろに かくれた 魚は 釣れないよ。でも 引きよせ なら とどくんだ！'],
   ['a','レア魚は かけひき券を もっている。ねらってみよう。'],
   ['a','おなじ色の タグを 4つ 集めると シナジーが 発動して すごく強くなるよ。'],
   ['a','タグを 7つ 集めると、もっと すごい シナジーが 出るんだ。'],
@@ -2529,12 +2492,10 @@ const TALKS = [
   ['a','パワーアップした 魚は、釣ったときの ごほうびも 大きくなるんだ。'],
   ['a','ルアーは 底に ついたら はね返って、また 上がってくるよ。'],
   ['a','ヌシは 息つぎの ときだけ 止まる。そこが ねらい目だよ。'],
-  ['a','ヌシは 岩の うしろに かくれたがる。うまく かこいこもう。'],
   ['a','お金は ためてから 使うと、もっと 良いカードが 出やすくなるよ。'],
   ['a','かけひきカードは いいことと わるいことが セット。よく読んで えらぼう。'],
   ['a','深いところほど 大きい魚が いる。でも しずむのに 時間が かかるんだ。'],
   ['a','ワッカを 大きくするか、帯を のばすか。どっちの ビルドも 強いよ。'],
-  ['a','引きよせは ワッカの 外の 魚を 引っぱってくる。岩ごしでも とどくんだ。'],
   ['a','たからばこは 魚より 速く にげる。先まわりして ねらおう。'],
   ['a','4投目・7投目・10投目に 海の形が 変わるよ。ねらいを 立て直そう。'],
   ['a','12投で おわり。投げる回数は ふえないから、1投を 大事にね。'],
@@ -2587,7 +2548,6 @@ const TALKS = [
   ['c','さっきの 一投、けっこう よかったんじゃない？'],
   ['c','ヌシって、どこで 生まれるんだろう。'],
   ['c','たまには 何も 考えずに 投げるのも 楽しいよ。'],
-  ['c','岩の うしろって、魚たちの ひみつ基地なのかも。'],
   ['c','海藻が ゆれてるの、ずっと 見ていられるなあ。'],
   ['c','お金って 何に 使ってるんだろうね、この釣り人。'],
   ['c','きょうの 海は なかなか いい感じだと 思うよ。'],
@@ -2910,7 +2870,7 @@ function buildSheet(list, opt){
     const el = EL[st.elem[c.id]], gain = synAfter(c);
     const d = document.createElement('div');
     d.className = 'card ' + TIER[c.t];
-    const price = free ? 'ムリョウ' : '¥' + cardCost(c).toLocaleString();
+    const price = (free || cardCost(c) === 0) ? 'ムリョウ' : '¥' + cardCost(c).toLocaleString();
     d.innerHTML =
       `<div class="ic">${c.ic}</div>
        <div class="elBig" style="--ec:${el.c}"><span>${el.ic}</span><i>${el.n}</i></div>
@@ -3045,6 +3005,9 @@ function applyPick(c, free){
   let slotBorn = false;
   // 枠は増えるが 際限なくは増やさない（終盤に何でも取れると 選ぶ意味が消える）
   if (c.slot==='b' && !wasMax && isMaxed(c) && st.slotMax < 7){ st.slotMax++; slotBorn = true; }
+  if (c.id==='purse')   st.money = Math.round(st.money * 3);   // いまの お金 3倍
+  if (c.id==='pray')    st.score = Math.round(st.score * 2);   // いまの スコア 2倍
+  if (c.id==='chest3')  st.freePU += 2;                        // その場で 2回 ひける
   if (c.id==='fish')    addFish(18);
   if (c.id==='fishBig') addFish(60);
   if (c.id==='umi')     addFish(40);
@@ -3070,6 +3033,8 @@ function applyPick(c, free){
     for (const el of cardsEl.children){ el.style.opacity = ''; el.style.visibility = ''; }
     fresh.forEach((id,i)=>setTimeout(()=>showSyn(SYNS.find(s=>s.id===id)), i*2100));
     // beginCast なら「無料パワーアップの直後にかけひきタイム」も取りこぼさない
+    // かいぞくのたからばこ の「その場で 2回」を ここで 消化する
+    if (st.freePU > 0){ st.freePU--; setTimeout(()=>openPU(true), 240); return; }
     if (st.castsLeft <= 0) gameOver(); else beginCast();
   }, slotBorn ? 1100 : 350);
 }
@@ -3149,15 +3114,6 @@ function checkTut(){
   }
   if (!st.tut.td && st.tickets > 0 && tradePool().length){
     showTut('かけひき券！<br>ここを おそう', tdBtn, false); return;
-  }
-  if (!st.tut.rock){                       // ★岩の うしろは 釣れない
-    const rk = (st.objs||[]).find(o=>o.solid);
-    if (rk){
-      st.tut.rock = 1;
-      showTut('岩の うしろの 魚は 釣れない！<br>出てくるのを 待とう',
-              { x:rk.x-40, y:rk.y-rk.h/2, w:80, h:0 }, false);
-      return;
-    }
   }
   hideTut();
 }
