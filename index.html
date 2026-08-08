@@ -56,6 +56,17 @@
   #fly   { z-index:58; }
   #legend,#roll,#screen { z-index:60; }
 
+  /* ---------- iPhone 対策：ふきだしの中で 画面が 拡大しないように ----------
+     touch-action は「いちばん近い スクロールする箱」までしか さかのぼらない。
+     #modal などは overflow-y:auto で それ自体が スクロールする箱なので、
+     html,body の touch-action:none が この中には とどいていなかった。
+     そのため パワーアップ画面の中だけ 二本指ひろげ／すばやい2回たたきで
+     Safari が 拡大してしまい、ゲームが 画面の左上に 追いやられていた。
+     pan-y ＝ たてスクロールは できる／拡大は できない */
+  #modal, #status, #stBody, #screen, #scBody, #buildList,
+  #roll, #codeSheet, #legend, #note {
+    touch-action:pan-y; overscroll-behavior:contain; }
+
   /* ---------- 下部ボタン ---------- */
   #stBtn,#muBtn,#puBtn { border-radius:14px; display:flex; flex-direction:column;
     align-items:center; justify-content:center; font-weight:bold; transition:.12s; }
@@ -328,9 +339,14 @@
   .csT { font-size:19px; font-weight:bold; color:#ffd76a; text-align:center; }
   .csT2 { font-size:12px; color:#8fd0e8; margin-top:4px; }
   .csD { font-size:11.5px; opacity:.8; line-height:1.5; }
-  #codeSheet textarea { width:100%; height:74px; border-radius:10px; padding:8px;
-    font-size:11px; font-family:monospace; background:#0d2033; color:#cfe6f5;
-    border:1px solid #2f5a7c; resize:none; }
+  /* font-size は 16px 未満に しないこと。iPhone は 小さい入力欄に さわると
+     かってに 画面を 拡大し、そのまま もどらなくなる */
+  #codeSheet textarea { width:100%; border-radius:10px; padding:8px;
+    font-size:16px; font-family:monospace; background:#0d2033; color:#cfe6f5;
+    border:1px solid #2f5a7c; resize:none; line-height:1.35; }
+  /* 出すほうは コードが ぜんぶ 見えるように 高め。入れるほうは 貼るだけなので 低め */
+  #codeOut { height:160px; }
+  #codeIn  { height:88px; }
   .csB { padding:10px 0; border-radius:22px; font-size:14px; font-weight:bold;
     background:#2f5a7c; color:#fff; border:none; }
   .csR { font-size:12px; font-weight:bold; min-height:16px; color:#8fe0a0; text-align:center; }
@@ -3751,11 +3767,19 @@ function viewSize(){
   const typing = document.activeElement &&
     /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName);
   let w = window.innerWidth, h = window.innerHeight;
-  if (vv && !typing){ w = Math.min(w, vv.width); h = Math.min(h, vv.height); }
+  // visualViewport は「iPhone の アドレスバーのぶん 見える高さが へる」のを
+  // 直すためだけに 使う。指で 拡大されている(scale が 1 でない)ときに 使うと、
+  // 見えている場所ではなく ページの左上を 基準に 置きなおしてしまい、
+  // ゲームが 画面の左上に はみ出して 見きれる。だから そのときは 使わない
+  if (vv && !typing && Math.abs((vv.scale || 1) - 1) < 0.01){
+    w = Math.min(w, vv.width); h = Math.min(h, vv.height);
+  }
   return [w, h];
 }
+let fitKey = '';
 function resize(){
   const [iw, ih] = viewSize();
+  fitKey = iw + 'x' + ih;
   curScale = Math.min(iw/W, ih/H);
   stage.style.transform =
     `translate(${(iw-W*curScale)/2}px, ${(ih-H*curScale)/2}px) scale(${curScale})`;
@@ -3765,6 +3789,15 @@ function resize(){
   const w = window.innerWidth, h = window.innerHeight;
   const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
   document.body.classList.toggle('landscape', touch && w > h && h < 520);
+}
+/* 見はり番。何かの ひょうしに 画面の 大きさが 変わったのに
+   知らせが 来なかった（iPhone の アドレスバーが 出たり 入ったりする とちゅうで
+   古い数字が 来ることがある）ときのために、0.5秒に1回 自分で 確かめて 直す */
+let fitT = 0;
+function fitWatch(dt){
+  fitT += dt; if (fitT < 0.5) return; fitT = 0;
+  const [iw, ih] = viewSize();
+  if (fitKey !== iw + 'x' + ih) resize();
 }
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', ()=>setTimeout(resize,120));
@@ -3789,6 +3822,7 @@ function loop(now){
   // 14ms を 下まわりつづけたら もどす（行ったり来たりしないよう 幅をとる）
   frameAvg += (Math.min(60, raw) - frameAvg) * 0.06;
   if (liteMode === 'auto') lite = lite ? frameAvg > 14 : frameAvg > 20;
+  fitWatch(dt);                       // 画面の 大きさが ずれていないか 見はる
   if (!paused && phase!=='title' && phase!=='over' && phase!=='powerup'
       && phase!=='slam' && phase!=='roll')
     update(dt);
@@ -3810,19 +3844,17 @@ requestAnimationFrame(loop);
 (function(){
   'use strict';
 
-  /* --- 二本指ひろげ／ダブルタップの 拡大を 止める ---
+  /* --- 二本指ひろげの 拡大を 止める ---
      iOS の Safari は user-scalable=no を 見てくれないので 自分で 止める。
-     文字を 打つところ だけは じゃま しない */
+     文字を 打つところ だけは じゃま しない。
+     すばやい 2回たたき の 拡大は CSS の touch-action に まかせている。
+     ここで touchend を 止めると、カードを 選ぶ タップ（click）まで
+     いっしょに 消えてしまい、えらべなく なることが あるため */
   const isField = el => el && el.closest &&
-    el.closest('input, textarea, button, [contenteditable]');
+    el.closest('input, textarea, [contenteditable]');
   document.addEventListener('gesturestart',  e=>{ if(!isField(e.target)) e.preventDefault(); }, {passive:false});
   document.addEventListener('gesturechange', e=>{ if(!isField(e.target)) e.preventDefault(); }, {passive:false});
-  let lastTap = 0;
-  document.addEventListener('touchend', e=>{
-    const now = Date.now();
-    if (now - lastTap < 320 && !isField(e.target)) e.preventDefault();
-    lastTap = now;
-  }, {passive:false});
+  document.addEventListener('gestureend',    e=>{ if(!isField(e.target)) e.preventDefault(); }, {passive:false});
 
   /* --- あそんでいる あいだ 画面を 消させない ---
      ためる ために 長おし するので、ほうっておくと 画面が 暗くなる */

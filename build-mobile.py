@@ -53,19 +53,17 @@ SHELL = '''
 (function(){
   'use strict';
 
-  /* --- 二本指ひろげ／ダブルタップの 拡大を 止める ---
+  /* --- 二本指ひろげの 拡大を 止める ---
      iOS の Safari は user-scalable=no を 見てくれないので 自分で 止める。
-     文字を 打つところ だけは じゃま しない */
+     文字を 打つところ だけは じゃま しない。
+     すばやい 2回たたき の 拡大は CSS の touch-action に まかせている。
+     ここで touchend を 止めると、カードを 選ぶ タップ（click）まで
+     いっしょに 消えてしまい、えらべなく なることが あるため */
   const isField = el => el && el.closest &&
-    el.closest('input, textarea, button, [contenteditable]');
+    el.closest('input, textarea, [contenteditable]');
   document.addEventListener('gesturestart',  e=>{ if(!isField(e.target)) e.preventDefault(); }, {passive:false});
   document.addEventListener('gesturechange', e=>{ if(!isField(e.target)) e.preventDefault(); }, {passive:false});
-  let lastTap = 0;
-  document.addEventListener('touchend', e=>{
-    const now = Date.now();
-    if (now - lastTap < 320 && !isField(e.target)) e.preventDefault();
-    lastTap = now;
-  }, {passive:false});
+  document.addEventListener('gestureend',    e=>{ if(!isField(e.target)) e.preventDefault(); }, {passive:false});
 
   /* --- あそんでいる あいだ 画面を 消させない ---
      ためる ために 長おし するので、ほうっておくと 画面が 暗くなる */
