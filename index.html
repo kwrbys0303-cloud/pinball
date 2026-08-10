@@ -781,7 +781,10 @@ const STAGES = [
     sky:['#08192b','#123c58'], col:['#1a5f80','#0a2f56','#010c18'],
     k:[[0,0.33,0.67],[0.28,0.33,0.67],[0.28,0.02,0.98],[1,0.02,0.98]] },
   { id:'cloud', nm:'天空の雲海', ic:'☁️', depth:'shallow', atmo:'cloud',
-    bgDim:0.42, seaTint:0.34, seaDim:0.30,
+    /* v12：金色の 雲の絵に 青を うすく のせると 茶色く にごり、
+       銀色の 生きもの（ソラマグロ・カゼクラゲ）が 溶けて 見えなくなっていた。
+       青を こくして 暗さも 足し、白い魚が うかび上がるように した */
+    bgDim:0.58, seaTint:0.62, seaDim:0.40,
     note:'空に うかぶ 雲の海。金色の 光が さしこみ、<br>よこに どこまでも ひろがっている。',
     sky:['#3a7fa8','#8fd0e8'], col:['#7fd6ee','#3fa4d0','#1f7aa8'],
     k:[[0,0,1],[0.62,0,1]] },
@@ -871,10 +874,11 @@ const MARKETS = [
   { pat:'@の下剋上',   star:0, dull:4, mul:2.6 },
   { pat:'@のむれ祭り', star:1, dull:3, mul:2.4 },
   { pat:'@のおでまし', star:2, dull:0, mul:2.0 },
-  { pat:'@せんぷう',   star:3, dull:2, mul:1.8 },
+  { pat:'@の大あばれ', star:3, dull:2, mul:1.8 },   /* 名前が 長くても 読めるように */
   { pat:'@の時代',     star:4, dull:1, mul:1.7 },
 ];
-const mkNm = m => m.pat.replace('@', rn(m.star));
+const mkNmAt = (sg, m) => m.pat.replace('@', LIFE[sg.id].f[m.star]);
+const mkNm   = m => mkNmAt(st.stage, m);
 const MARKET_OK = { shallow:[0,1,2], mid:[0,1,2,3,4], deep:[2,3,4] };
 const mkMul = r => r===st.market.star ? st.market.mul : r===st.market.dull ? 0.45 : 1;
 
@@ -1357,7 +1361,7 @@ const cv = $('cv'), ctx = cv.getContext('2d');
 let st, phase = 'title', hiScore = 0;
 /* 軽量モード。lite が true のあいだ キラキラ・つぶ・にごりの粒を へらす。
    liteMode 'auto' なら フレーム時間を 見て 自動で 入り／抜けする */
-let lite = false, liteMode = 'auto', frameAvg = 16;
+let lite = false, liteMode = 'auto', frameAvg = 16.7;
 
 const fishPool = [], chestPool = [], bubPool = [], parPool = [];
 for (let i=0;i<FISH_CAP+140;i++) fishPool.push({ alive:false });
@@ -3750,15 +3754,18 @@ const screen=$('screen'), scTtl=$('scTtl'), scBody=$('scBody'),
 /* v9 の実測分布から引き直した。8戦で
    5.5千／1.4万／3.0万／3.8万／5.6万／6.7万／8.1万／16.4万。
    岩が大きくなって かくれる魚が ふえたぶん 全体が すこし下がった */
-/* ランクの しきい値。自動プレイ 36戦（下手・ふつう・上手 の3とおり）の
-   分布に あわせて 引き直した。
-     中央 21,500 ／ 75%点 36,600 ／ 90%点 54,000 ／ 最高 185,800
-   もともとの 値が ほぼ そのまま 当てはまったので（C=45%点・B=77%点・A=93%点）、
-   天井が のびた ぶん 上位だけ 少し 上げ、下は そのままに した */
+/* ランクの しきい値。v11 と v12 を 同じ 自動プレイで 交互に 16戦ずつ
+   走らせて 比べ、点数が 何倍に なったかで 全体を ずらした。
+     25%点 ×4.91／中央 ×7.15／75%点 ×3.92／90%点 ×1.81／最高 ×2.34
+   下ほど 比が 大きいのは、魚が ふえて「まったく釣れない回」が
+   消えたから。1つの数で そろえるため 幾何平均の ×3.57 を つかった。
+   これで「ふつうに 遊ぶ人は Cランク」という v11 の 手ざわりが 残る。
+   ※ 16戦ずつ なので 精度は そこそこ。遊んでみて 高すぎ／低すぎと
+     感じたら ここの 数字を まとめて 上げ下げすれば よい */
 const RANK_TH = [
-  [420000,'SSS','#ff7ad0'], [240000,'SS','#ffd76a'], [140000,'S','#ffe9a8'],
-  [78000,'A','#8fe0a0'], [38000,'B','#7fd0ff'], [16000,'C','#9fb8d0'],
-  [6000,'D','#a0a8b0'], [0,'E','#8a8f96'],
+  [1500000,'SSS','#ff7ad0'], [860000,'SS','#ffd76a'], [500000,'S','#ffe9a8'],
+  [280000,'A','#8fe0a0'], [140000,'B','#7fd0ff'], [57000,'C','#9fb8d0'],
+  [21000,'D','#a0a8b0'], [0,'E','#8a8f96'],
 ];
 function rankOf(sc){ for (const r of RANK_TH) if (sc >= r[0]) return r; return RANK_TH[RANK_TH.length-1]; }
 
@@ -3970,7 +3977,7 @@ function hiListHTML(newIdx){
       <div class="hiMain">
         <div class="hiSc">${r.sc.toLocaleString()}<span class="hiRk" style="color:${rk[2]}">${rk[1]}</span></div>
         <div class="hiNm">${RUN_NAMES[r.nm|0] || RUN_NAMES[0]}</div>
-        <div class="hiSub">${sg.ic} ${sg.nm}　${mk.nm}</div>
+        <div class="hiSub">${sg.ic} ${sg.nm}　${mkNmAt(sg, mk)}</div>
         ${sy.length ? `<div class="hiSyn">◆ ${sy.join(' ／ ')}</div>` : ''}
       </div>
       <div class="hiDt">${r.d||''}</div>
@@ -4174,10 +4181,14 @@ let last = performance.now();
 function loop(now){
   const raw = now - last;
   const dt = Math.min(0.05, raw/1000); last = now;
-  // フレーム時間の ならし。20ms を こえつづけたら 軽量モードに入り、
-  // 14ms を 下まわりつづけたら もどす（行ったり来たりしないよう 幅をとる）
+  // フレーム時間の ならし。軽量モードに 入る／もどる しきい値。
+  // v12バグ修正：もどる しきい値が 14ms だったが、60Hz の 画面では
+  //   1フレームが どんなに 速くても 16.7ms までしか 下がらない。
+  //   つまり 一度 軽量モードに 入ると 二度と もどれなかった
+  //   （読みこみ直後は 必ず 20ms を こえるので、事実上 ずっと 軽量モード）。
+  //   もどる しきい値を 16.7ms の 上に 置きなおす
   frameAvg += (Math.min(60, raw) - frameAvg) * 0.06;
-  if (liteMode === 'auto') lite = lite ? frameAvg > 14 : frameAvg > 20;
+  if (liteMode === 'auto') lite = lite ? frameAvg > 19.5 : frameAvg > 24;
   fitWatch(dt);                       // 画面の 大きさが ずれていないか 見はる
   if (st) countRanks(raw/1000);       // 魚の 数を かぞえる（表示用）
   if (!paused && phase!=='title' && phase!=='over' && phase!=='powerup'
