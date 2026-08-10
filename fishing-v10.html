@@ -1128,7 +1128,7 @@ const CARDS = [
   { id:'umi',    t:'t', slot:'t', max:1, ic:'🌅', nm:'うみびらき',
     good:'すぐに 魚 +60匹／毎投 +12匹', bad:'海が よこに ひろがって うすくなる' },
   { id:'chibi',  t:'t', slot:'t', max:1, ic:'🐣', nm:'みんなチビちゃん',
-    good:'魚の数 1.8倍・スコア 1.5倍', bad:'魚のランクが みんな1つ下がる' },
+    good:'魚の数 1.8倍・スコア 1.6倍', bad:'魚のランクが みんな1つ下がる' },
   { id:'scatter',t:'t', slot:'t', max:1, ic:'💫', nm:'ちりぢりバラバラ',
     good:'すぐに 魚 +25匹／毎投 +3匹', bad:'魚が 群れなくなる' },
   { id:'wild',   t:'t', slot:'t', max:1, ic:'😤', nm:'さかなブチギレ',
@@ -1138,7 +1138,7 @@ const CARDS = [
   { id:'pricey', t:'t', slot:'t', max:1, ic:'💸', nm:'ねだんつりあげ',
     good:'えらべる数が 4つになる',  bad:'パワーアップの ねだんが 1.15倍' },
   { id:'quick',  t:'t', slot:'t', max:1, ic:'⚡', nm:'いなずまカーソル',
-    good:'スコア 1.5倍',          bad:'ねらいのカーソルが 2.0倍はやい' },
+    good:'スコア 1.3倍',          bad:'ねらいのカーソルが 2.0倍はやい' },
   { id:'sink',   t:'t', slot:'t', max:1, ic:'🪨', nm:'ふかもぐり',
     good:'深い魚が ドカンと ふえる', bad:'ルアーが 2.5倍はやく しずむ' },
   { id:'focus',  t:'t', slot:'t', max:1, ic:'🎯', nm:'いってんしゅうちゅう',
@@ -1146,7 +1146,7 @@ const CARDS = [
   { id:'net',    t:'t', slot:'t', max:1, ic:'🕸️', nm:'どデカあみ',
     good:'ワッカ +22',            bad:'デカい魚の スコアが 2割ダウン' },
   { id:'desper', t:'t', slot:'t', max:1, ic:'🔥', nm:'さいごのしょうぶ',
-    good:'スコア 3.0倍',
+    good:'スコア 3.5倍',
     bad:'魚が わかなくなる／このあとの 魚群・ヌシ・レア魚・大漁タイムも 来ない' },
   /* ---- 1回きり（枠なし・やすい）---- */
   { id:'tFish',  t:'x', slot:null, max:99, ic:'🍤', nm:'まきエサどっさり',     ds:'つぎの1投だけ：その場に 魚 +30匹' },
@@ -1463,16 +1463,16 @@ function recompute(){
   //      1枚で 使いきってしまい、ほかの かけひきカードが 無意味になる
   let tMul = 1;
   if (lv('focus'))  tMul *= 1.8;
-  if (lv('desper')) tMul *= 3.0;
-  if (lv('chibi'))  tMul *= 1.5;
+  if (lv('desper')) tMul *= 3.5;
+  if (lv('chibi'))  tMul *= 1.6;
   if (lv('wild'))   tMul *= 1.6;
-  if (lv('quick'))  tMul *= 1.5;
+  if (lv('quick'))  tMul *= 1.3;
   s.tradeMul = Math.min(4.2, tMul);
   s.scoreMult = (1 + lv('score')*0.18) * fireM * allM * (1 + s.pend.scoreAdd)
               * (lv('rich')?2:1) * (lv('pray')?1.5:1) * (1 + s.gift.score)
               * s.tradeMul;
 
-  s.rankP = lv('rank')*0.12 + lv('deep')*0.05 + (on('earth6') ? 0.40 : 0) + (lv('sink') ? 0.34 : 0);
+  s.rankP = lv('rank')*0.12 + lv('deep')*0.05 + (on('earth6') ? 0.40 : 0) + (lv('sink') ? 0.40 : 0);
   s.fishScale = ak * (lv('chibi') ? 1.8 : 1);
   s.cursorSpd = CURSOR_SPD * (lv('quick') ? 2.0 : 1);
   s.dropSpd   = DROP_SPD   * (lv('sink')  ? 2.5 : 1);
