@@ -980,11 +980,11 @@ const CARDS = [
   { id:'chibi',  t:'t', slot:'t', max:1, ic:'🐣', nm:'みんなチビちゃん',
     good:'魚の数 1.8倍・スコア 1.5倍', bad:'魚のランクが みんな1つ下がる' },
   { id:'scatter',t:'t', slot:'t', max:1, ic:'💫', nm:'ちりぢりバラバラ',
-    good:'すぐに 魚 +25匹／毎投 +3匹・ワッカ +8', bad:'魚が 群れなくなる' },
+    good:'すぐに 魚 +25匹／毎投 +3匹', bad:'魚が 群れなくなる' },
   { id:'wild',   t:'t', slot:'t', max:1, ic:'😤', nm:'さかなブチギレ',
     good:'スコア 1.6倍',          bad:'ぜんぶの魚が ルアーから 逃げる' },
   { id:'wildBox',t:'t', slot:'t', max:1, ic:'💨', nm:'あばれ宝箱',
-    good:'たからばこ +2・こうか +1回', bad:'たからばこが もっと はやく 逃げる' },
+    good:'たからばこ +3',           bad:'たからばこが もっと はやく 逃げる' },
   { id:'pricey', t:'t', slot:'t', max:1, ic:'💸', nm:'ねだんつりあげ',
     good:'えらべる数が 4つになる',  bad:'パワーアップの ねだんが 1.15倍' },
   { id:'quick',  t:'t', slot:'t', max:1, ic:'⚡', nm:'いなずまカーソル',
@@ -1280,8 +1280,8 @@ function recompute(){
   s.stageArea = seaArea(s.k, lv('umi')>0);
 
   let r = BASE_R + lv('radius')*20 + windA + s.pend.ring
-        + (lv('net') ? 22 : 0) + (lv('ring') ? 70 : 0) + (lv('scatter') ? 8 : 0);
-  r *= (lv('focus') ? 0.65 : 1) * allM * (1 + s.gift.ring);
+        + (lv('net') ? 22 : 0) + (lv('ring') ? 70 : 0);
+  r *= (lv('focus') ? 0.75 : 1) * allM * (1 + s.gift.ring);
   s.radius = r;
 
   const bm = on('wind6') ? 1.7 : 1;
@@ -1302,9 +1302,9 @@ function recompute(){
                           + waterR + tradeRegen + s.gift.fish)
                          * allM * (lv('chibi') ? 1.8 : 1) * ak * REGEN_K));
 
-  s.chestTarget = Math.min(16, Math.round((BASE_CHEST + lv('chest') + earthC + (lv('wildBox')?2:0))
+  s.chestTarget = Math.min(16, Math.round((BASE_CHEST + lv('chest') + earthC + (lv('wildBox')?3:0))
                   * (lv('chest3') ? 3 : 1) * allM));
-  s.chestTimes = 1 + lv('lucky') + (on('earth6') ? 1 : 0) + (lv('wildBox') ? 1 : 0);
+  s.chestTimes = 1 + lv('lucky') + (on('earth6') ? 1 : 0);
   s.coinMult   = (earthC ? 2.5 : 1) * (on('earth6') ? 1.2 : 1);
   s.moneyMult  = (lv('purse') ? 1.5 : 1) * (1 + s.gift.score);   // めがみのさいふ＋しおのめぐみ
 
