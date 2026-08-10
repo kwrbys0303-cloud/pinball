@@ -1482,7 +1482,7 @@ function spawnChest(){
    ずっと つづく こうかは 積み上がると こわれるので、それぞれ 上限を もうけた */
 const CHEST_ROLL = ['coin','coin','ticket',
                     'fish','fish','score','ring','pull'];
-const CHEST_CAP  = { fish:30, score:1.0, ring:0.8 };   // 積み上げの 上限
+const CHEST_CAP  = { fish:24, score:0.6, ring:0.5 };   // 積み上げの 上限
 const CHEST_NM   = {
   coin:  ['💰','小判'],
   ticket:['🎫','かけひき券'],
@@ -1491,13 +1491,13 @@ const CHEST_NM   = {
   ring:  ['🌊','なみのめぐみ'],
   pull:  ['🧲','いそのめぐみ'],
 };
-/* たからばこの お金は「つぎの パワーアップの 3分の1」。
+/* たからばこの お金は「つぎの パワーアップの 4分の1」。
    ただし ねだんを 上げ下げする カード（ねだんつりあげ・たつじんのハチマキ）の
    えいきょうは 受けない。ハチマキを 取ったら もらえる額が 半分に なる、
    という へんな ことが 起きるため */
 function chestCoin(){
   const base = Math.round(30 * Math.pow(1.8, st.puCount));
-  return Math.max(20, Math.round(base / 3 * st.coinMult * st.moneyMult));
+  return Math.max(20, Math.round(base / 4 * st.coinMult * st.moneyMult));
 }
 /* かけひき券。枠が埋まっていれば お金に変わる（ムダにならない） */
 function gainTicket(){
@@ -1715,7 +1715,9 @@ function tally(){
       const G = st.gift;
       if (c.kind==='coin'){ const g = chestCoin(); mo += g; msgs.push('¥'+g.toLocaleString()); }
       else if (c.kind==='ticket'){ if (i===0) msgs.push(gainTicket()); }
-      // ここから下は のこりずっと つづく。上限まで 積み上がる
+      // ずっと つづく めぐみは 1つの箱につき 1回だけ。
+      // 「こうか +1回」の カードで ここまで 倍に すると 雪だるまに なる
+      else if (i > 0){ /* 2回目からは めぐみは つかない */ }
       else if (c.kind==='fish'){
         P.fish = Math.min(PEND_CAP.fish, P.fish + 8);            // すぐに 8匹
         if (G.fish < CHEST_CAP.fish){ G.fish = Math.min(CHEST_CAP.fish, G.fish + 3);
