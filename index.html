@@ -1482,7 +1482,10 @@ function spawnChest(){
    ずっと つづく こうかは 積み上がると こわれるので、それぞれ 上限を もうけた */
 const CHEST_ROLL = ['coin','coin','ticket',
                     'fish','fish','score','ring','pull'];
-const CHEST_CAP  = { fish:24, score:0.6, ring:0.5 };   // 積み上げの 上限
+/* 積み上げの 上限。ゆるめると「ぜんぶ盛り」の 天井が はねあがる。
+   実測：score を 0.6 まで 許すと スコア倍率の 上限が 55倍 → 98倍 に なり、
+   1プレイ 218万点 という 外れ値が 出た。宝箱の うれしさは 残しつつ しぼる */
+const CHEST_CAP  = { fish:20, score:0.30, ring:0.25 };
 const CHEST_NM   = {
   coin:  ['💰','小判'],
   ticket:['🎫','かけひき券'],
