@@ -1126,25 +1126,25 @@ const CARDS = [
   { id:'rich',   t:'l', slot:'l', max:1, ic:'💰', nm:'大富豪',         ds:'スコアとお金が まるごと 2倍！' },
   /* ---- トレードオフ（かけひき枠 / 良い効果 → 悪い効果 の順）---- */
   { id:'umi',    t:'t', slot:'t', max:1, ic:'🌅', nm:'うみびらき',
-    good:'すぐに 魚 +40匹／毎投 +8匹', bad:'海が よこに ひろがって うすくなる' },
+    good:'すぐに 魚 +60匹／毎投 +12匹', bad:'海が よこに ひろがって うすくなる' },
   { id:'chibi',  t:'t', slot:'t', max:1, ic:'🐣', nm:'みんなチビちゃん',
     good:'魚の数 1.8倍・スコア 1.5倍', bad:'魚のランクが みんな1つ下がる' },
   { id:'scatter',t:'t', slot:'t', max:1, ic:'💫', nm:'ちりぢりバラバラ',
-    good:'すぐに 魚 +50匹／毎投 +8匹・ワッカ +20', bad:'魚が 群れなくなる' },
+    good:'すぐに 魚 +25匹／毎投 +3匹・ワッカ +8', bad:'魚が 群れなくなる' },
   { id:'wild',   t:'t', slot:'t', max:1, ic:'😤', nm:'さかなブチギレ',
     good:'スコア 1.6倍',          bad:'ぜんぶの魚が ルアーから 逃げる' },
   { id:'wildBox',t:'t', slot:'t', max:1, ic:'💨', nm:'あばれ宝箱',
-    good:'たからばこ +3・こうか +1回', bad:'たからばこが もっと はやく 逃げる' },
+    good:'たからばこ +2・こうか +1回', bad:'たからばこが もっと はやく 逃げる' },
   { id:'pricey', t:'t', slot:'t', max:1, ic:'💸', nm:'ねだんつりあげ',
-    good:'えらべる数が 4つになる',  bad:'パワーアップの ねだんが 1.3倍' },
+    good:'えらべる数が 4つになる',  bad:'パワーアップの ねだんが 1.15倍' },
   { id:'quick',  t:'t', slot:'t', max:1, ic:'⚡', nm:'いなずまカーソル',
     good:'スコア 1.5倍',          bad:'ねらいのカーソルが 2.0倍はやい' },
   { id:'sink',   t:'t', slot:'t', max:1, ic:'🪨', nm:'ふかもぐり',
-    good:'深い魚が ぐっと ふえる',  bad:'ルアーが 2.5倍はやく しずむ' },
+    good:'深い魚が ドカンと ふえる', bad:'ルアーが 2.5倍はやく しずむ' },
   { id:'focus',  t:'t', slot:'t', max:1, ic:'🎯', nm:'いってんしゅうちゅう',
     good:'スコア 1.8倍',          bad:'ワッカが かなり 小さくなる' },
   { id:'net',    t:'t', slot:'t', max:1, ic:'🕸️', nm:'どデカあみ',
-    good:'ワッカ +45',            bad:'デカい魚の スコアが 2割ダウン' },
+    good:'ワッカ +22',            bad:'デカい魚の スコアが 2割ダウン' },
   { id:'desper', t:'t', slot:'t', max:1, ic:'🔥', nm:'さいごのしょうぶ',
     good:'スコア 3.0倍',
     bad:'魚が わかなくなる／このあとの 魚群・ヌシ・レア魚・大漁タイムも 来ない' },
@@ -1430,8 +1430,8 @@ function recompute(){
   s.stageArea = seaArea(s.k, lv('umi')>0);
 
   let r = BASE_R + lv('radius')*20 + windA + s.pend.ring
-        + (lv('net') ? 45 : 0) + (lv('ring') ? 70 : 0) + (lv('scatter') ? 20 : 0);
-  r *= (lv('focus') ? 0.55 : 1) * allM * (1 + s.gift.ring);
+        + (lv('net') ? 22 : 0) + (lv('ring') ? 70 : 0) + (lv('scatter') ? 8 : 0);
+  r *= (lv('focus') ? 0.65 : 1) * allM * (1 + s.gift.ring);
   s.radius = r;
 
   const bm = on('wind6') ? 1.7 : 1;
@@ -1445,14 +1445,14 @@ function recompute(){
   const ak = Math.max(0.25, s.stageArea);
   // 海の広さを かけると せまい海で 7〜9匹まで 落ちて 枯れてしまうので、
   // 下限を もうける（REGEN_MIN）。ふえすぎたら REGEN_K を さげて 一括調整する
-  const tradeRegen = (lv('umi') ? 8 : 0) + (lv('scatter') ? 8 : 0);
+  const tradeRegen = (lv('umi') ? 12 : 0) + (lv('scatter') ? 3 : 0);
   s.regen = lv('desper') ? 0
           : Math.max(REGEN_MIN,
               Math.round((FISH_REGEN + lv('fish')*3 + (lv('fishBig')?10:0)
                           + waterR + tradeRegen + s.gift.fish)
                          * allM * (lv('chibi') ? 1.8 : 1) * ak * REGEN_K));
 
-  s.chestTarget = Math.min(16, Math.round((BASE_CHEST + lv('chest') + earthC + (lv('wildBox')?3:0))
+  s.chestTarget = Math.min(16, Math.round((BASE_CHEST + lv('chest') + earthC + (lv('wildBox')?2:0))
                   * (lv('chest3') ? 3 : 1) * allM));
   s.chestTimes = 1 + lv('lucky') + (on('earth6') ? 1 : 0) + (lv('wildBox') ? 1 : 0);
   s.coinMult   = (earthC ? 2.5 : 1) * (on('earth6') ? 1.2 : 1);
@@ -1472,7 +1472,7 @@ function recompute(){
               * (lv('rich')?2:1) * (lv('pray')?1.5:1) * (1 + s.gift.score)
               * s.tradeMul;
 
-  s.rankP = lv('rank')*0.12 + lv('deep')*0.05 + (on('earth6') ? 0.40 : 0) + (lv('sink') ? 0.20 : 0);
+  s.rankP = lv('rank')*0.12 + lv('deep')*0.05 + (on('earth6') ? 0.40 : 0) + (lv('sink') ? 0.34 : 0);
   s.fishScale = ak * (lv('chibi') ? 1.8 : 1);
   s.cursorSpd = CURSOR_SPD * (lv('quick') ? 2.0 : 1);
   s.dropSpd   = DROP_SPD   * (lv('sink')  ? 2.5 : 1);
@@ -1486,7 +1486,7 @@ function applySynBurst(ids){
 }
 // 初回を¥30にして序盤を底上げしつつ、カーブは1.8で 総回数を12〜14に絞る
 function puCost(){ return Math.round(30 * Math.pow(1.8, st.puCount)
-                     * (lv('pricey') ? 1.3 : 1) * (lv('band') ? 0.5 : 1)); }
+                     * (lv('pricey') ? 1.15 : 1) * (lv('band') ? 0.5 : 1)); }
 const cardCost = c => c.id==='purse' ? 0            // めがみのさいふは タダ
                     : c.t==='x' ? Math.round(puCost()*0.55) : puCost();
 
@@ -1496,7 +1496,7 @@ const cardCost = c => c.id==='purse' ? 0            // めがみのさいふは 
 function pickRank(){
   let w = [40,26,18,11,5];
   if (lv('deep')) { w[3] += 7*lv('deep'); w[4] += 5*lv('deep'); }
-  if (lv('sink')) { w[3] += 9; w[4] += 7; }
+  if (lv('sink')) { w[3] += 14; w[4] += 12; }
   w[st.market.star] *= 0.55; w[st.market.dull] *= 1.8;
   for (let i=0;i<5;i++) if (st.fmod.king[i]) w[i] *= 1.6;
   const tot = w.reduce((a,b)=>a+b,0);
@@ -3281,9 +3281,9 @@ function applyPick(c, free){
   if (c.id==='chest3')  st.freePU += 2;                        // その場で 2回 ひける
   if (c.id==='fish')    addFish(18);
   if (c.id==='fishBig') addFish(60);
-  if (c.id==='umi')     addFish(40);
+  if (c.id==='umi')     addFish(60);
   if (c.id==='chibi')   addFish(Math.round(aliveFish()*0.6));
-  if (c.id==='scatter') addFish(50);
+  if (c.id==='scatter') addFish(25);
 
   const fresh = recompute();
   applySynBurst(fresh); recompute();
