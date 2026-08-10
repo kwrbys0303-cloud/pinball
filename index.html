@@ -712,7 +712,8 @@ const STAGES = [
     note:'だれも 底を 見たことがない 巨大な たてあな。<br>落とした糸は どこまでも 沈んでいく。',
     sky:['#08192b','#123c58'], col:['#1a5f80','#0a2f56','#010c18'],
     k:[[0,0.33,0.67],[0.28,0.33,0.67],[0.28,0.02,0.98],[1,0.02,0.98]] },
-  { id:'cloud', nm:'天空の雲海', ic:'☁️', depth:'shallow', atmo:'cloud', bgDim:0.42,
+  { id:'cloud', nm:'天空の雲海', ic:'☁️', depth:'shallow', atmo:'cloud',
+    bgDim:0.42, seaTint:0.34, seaDim:0.30,
     note:'空に うかぶ 雲の海。金色の 光が さしこみ、<br>よこに どこまでも ひろがっている。',
     sky:['#3a7fa8','#8fd0e8'], col:['#7fd6ee','#3fa4d0','#1f7aa8'],
     k:[[0,0,1],[0.62,0,1]] },
@@ -2078,18 +2079,49 @@ const seaImg = new Image();
 let seaReady = false;
 const seaTex = document.createElement('canvas');
 seaTex.width = SEA_W; seaTex.height = WATER_H;
+/* CSS の background-size:cover と 同じ 切り出し方を 計算する。
+   画面の (x,y,w,h) が 絵の どこに あたるかを 返す。
+   これで 海の中の絵と 海の外の絵が ぴったり つながる */
+function coverRect(img, x, y, w, h){
+  const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+  const sc = Math.max(W/iw, H/ih);
+  const ox = (W - iw*sc)/2, oy = (H - ih*sc)/2;
+  return [(x-ox)/sc, (y-oy)/sc, w/sc, h/sc];
+}
+/* 海の中に 貼る 絵を 焼く。ステージが 決まったとき 1回だけ 走るので
+   毎フレームの 処理は ふえない。
+   海の外は 暗く、海の中は 明るいまま に して、
+   海が「明るい窓」に 見えるようにしている */
 function buildSeaTexture(){
-  if (!seaReady || !st) return;
-  const c = seaTex.getContext('2d'), mt = maxT(), dh = WATER_H * mt;
+  if (!st) return;
+  const c = seaTex.getContext('2d');
   c.clearRect(0,0,SEA_W,WATER_H);
-  // 縦の縮み具合が どのステージでも同じになるよう 絵も maxT だけ切り出す。
-  // 結果、浅い海は明るい水面ちかく／深い海は暗い底まで が自然に使われる
-  c.drawImage(seaImg, 0, 0, seaImg.width, seaImg.height*mt, 0, 0, SEA_W, dh);
-  const g = c.createLinearGradient(0,0,0,dh);
+  const bg = stageBgImg;
+  if (stageBgReady && bg && bg.naturalWidth){
+    const r = coverRect(bg, WATER_L, WATER_T, SEA_W, WATER_H);
+    c.drawImage(bg, r[0], r[1], r[2], r[3], 0, 0, SEA_W, WATER_H);
+  } else if (seaReady){
+    const mt = maxT(), dh = WATER_H * mt;
+    c.drawImage(seaImg, 0, 0, seaImg.width, seaImg.height*mt, 0, 0, SEA_W, dh);
+  } else return;
+  // 水らしさと ステージの 色みを のせる。絵を つぶさない よう うすめに
+  const g = c.createLinearGradient(0,0,0,WATER_H);
   g.addColorStop(0, st.stage.col[0]); g.addColorStop(.45, st.stage.col[1]);
   g.addColorStop(1, st.stage.col[2]);
-  c.globalAlpha = 0.55; c.fillStyle = g; c.fillRect(0,0,SEA_W,dh); c.globalAlpha = 1;
+  c.globalAlpha = st.stage.seaTint != null ? st.stage.seaTint : 0.30;
+  c.fillStyle = g; c.fillRect(0,0,SEA_W,WATER_H);
+  // 明るすぎる絵は 魚が 見えなく なるので、ステージごとに 追加で 落とす
+  c.globalAlpha = 1;
+  if (st.stage.seaDim){
+    c.fillStyle = `rgba(10,26,44,${st.stage.seaDim})`; c.fillRect(0,0,SEA_W,WATER_H);
+  }
+  // 深いほど 暗く。上が 明るく 下が 暗い＝水の中らしさ
+  const d = c.createLinearGradient(0,0,0,WATER_H);
+  d.addColorStop(0,'rgba(255,255,255,.10)'); d.addColorStop(.35,'rgba(255,255,255,0)');
+  d.addColorStop(1,'rgba(2,10,20,.34)');
+  c.fillStyle = d; c.fillRect(0,0,SEA_W,WATER_H);
 }
+let stageBgImg = null, stageBgReady = false, stageBgSrc = '';
 seaImg.onload = ()=>{ seaReady = true; buildSeaTexture(); };
 seaImg.src = IMG_SEA;
 
@@ -3925,6 +3957,14 @@ function applyStageBg(){
   const src = (st && st.stage && BG_SRC[st.stage.id]) || IMG_SCENE;
   bgEl.style.backgroundImage  = `url(${src})`;
   bgEl.style.setProperty('--dim', (st && st.stage && st.stage.bgDim) || 0);
+  // 海の中にも 同じ絵を 貼るので、読みこんでから 焼きなおす
+  if (stageBgSrc !== src){
+    stageBgSrc = src; stageBgReady = false;
+    const im = new Image();
+    im.onload = ()=>{ if (stageBgSrc === src){ stageBgImg = im; stageBgReady = true;
+                        buildSeaTexture(); } };
+    im.src = src;
+  } else if (stageBgReady) buildSeaTexture();
   $('roll').style.backgroundImage = `url(${src})`;
 }
 $('screen').style.backgroundImage = `url(${IMG_SCENE})`;
