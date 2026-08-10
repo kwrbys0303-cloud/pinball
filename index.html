@@ -632,6 +632,8 @@ const CHANCE      = { 4:'school', 8:'boss', 12:'rush' };
 const BASE_R      = 52;
 const BASE_FISH   = 70;
 const FISH_REGEN  = 15;
+const REGEN_MIN   = 12;   // 毎投の わく数の 下限
+const REGEN_K     = 1.0;  // 全体の つまみ。ふえすぎたら ここを さげる
 const FISH_FLOOR  = 40;
 const FISH_CAP    = 620;
 const BASE_CHEST  = 3;
@@ -692,7 +694,7 @@ const RARES = [
   { id:'puff', nm:'ニジフグ', ic:'🐡', move:'pulse',  spd:230, score:950,
     tale:'ふくらむと 七色の トゲが ひらく。<br>おこらせると だれにも つかまえられない。' },
 ];
-const RARE_PRIZE = '釣れたら かけひき券ゲット！';
+const RARE_PRIZE = '釣れたら かけひき券ゲット！　※その1投で にげてしまう';
 const DEPTH_PREF = [0.10, 0.27, 0.47, 0.68, 0.87];
 /* 逃げ足の ぜんたい調整。ねらう たのしさが 減っていたので 少しだけ ゆっくりに。
    ここだけ 直せば ぜんぶに きく */
@@ -705,19 +707,19 @@ const STAGES = [
   { id:'shore', nm:'はじまりの浅瀬', ic:'🏖️', depth:'mid', atmo:'light',
     note:'朝もやの むこうで 小魚が はねる。<br>ここから すべての 釣り人が はじまる。',
     sky:['#0d2b45','#1c4e6e'], col:['#2b8fbb','#12578a','#062a4a'],
-    k:[[0,0,1],[1,0,1]] },
+    k:[[0,0.08,0.92],[1,0.08,0.92]] },
   { id:'abyss', nm:'深海の大穴', ic:'🕳️', depth:'deep', atmo:'ray',
     note:'だれも 底を 見たことがない 巨大な たてあな。<br>落とした糸は どこまでも 沈んでいく。',
     sky:['#08192b','#123c58'], col:['#1a5f80','#0a2f56','#010c18'],
     k:[[0,0.33,0.67],[0.28,0.33,0.67],[0.28,0.02,0.98],[1,0.02,0.98]] },
   { id:'cloud', nm:'天空の雲海', ic:'☁️', depth:'shallow', atmo:'cloud', bgDim:0.42,
-    note:'空に うかぶ 雲の海。どこまでも ひろいが、<br>足もとは おどろくほど 浅い。',
+    note:'空に うかぶ 雲の海。金色の 光が さしこみ、<br>よこに どこまでも ひろがっている。',
     sky:['#3a7fa8','#8fd0e8'], col:['#7fd6ee','#3fa4d0','#1f7aa8'],
-    k:[[0,0,1],[0.40,0,1]] },
+    k:[[0,0,1],[0.62,0,1]] },
   { id:'dragon', nm:'竜のたてあな', ic:'🐉', depth:'deep', atmo:'rock',
-    note:'竜が とおった あとに できた 細く深い さけめ。<br>ヨコに ひろげても ここでは 意味がない。',
+    note:'竜が とおった あとに できた 深い さけめ。<br>両がわの 岩かべに そって、どこまでも 落ちていく。',
     sky:['#1a1224','#3a2440'], col:['#2a6a86','#123a5c','#3a0d1c'],
-    k:[[0,0.37,0.63],[1,0.37,0.63]] },
+    k:[[0,0.20,0.80],[1,0.20,0.80]] },
   { id:'twin', nm:'ふたごの入り江', ic:'⏳', depth:'mid', atmo:'rock',
     note:'くびれた ところで 二つに 分かれた 入り江。<br>上と下、どちらの海を 選ぶかは きみ しだい。',
     sky:['#0d2b45','#1c4e6e'], col:['#2b8fbb','#0f4a72','#04203c'],
@@ -725,7 +727,7 @@ const STAGES = [
   { id:'ruin', nm:'かいだんの遺跡', ic:'🏛️', depth:'mid', atmo:'rock',
     note:'沈んだ 石のかいだんが 右へ 右へと 下っていく。<br>下るほど 大きな影が よこぎる。',
     sky:['#12253a','#254e6a'], col:['#2a7fa6','#0e4468','#051c33'],
-    k:[[0,0,1],[0.34,0,1],[0.34,0.34,1],[0.67,0.34,1],[0.67,0.67,1],[1,0.67,1]] },
+    k:[[0,0,1],[0.34,0,1],[0.34,0.26,1],[0.67,0.26,1],[0.67,0.55,1],[1,0.55,1]] },
   { id:'moon', nm:'まんげつの湾', ic:'🌕', depth:'mid', atmo:'light',
     note:'満月の夜、湖面に うつる月が<br>まるで 釣り人を さそうように あやしく 光る。',
     sky:['#101c38','#2a3f66'], col:['#3a9fc8','#14568a','#04203c'],
@@ -1288,9 +1290,12 @@ function recompute(){
     lv('pull') + lv('pullBig')*2 + (on('wind6') ? 1 : 0) + s.pend.pull);
 
   const ak = Math.max(0.25, s.stageArea);
+  // 海の広さを かけると せまい海で 7〜9匹まで 落ちて 枯れてしまうので、
+  // 下限を もうける（REGEN_MIN）。ふえすぎたら REGEN_K を さげて 一括調整する
   s.regen = lv('desper') ? 0
-          : Math.round((FISH_REGEN + lv('fish')*3 + (lv('fishBig')?10:0) + waterR)
-                       * allM * (lv('chibi') ? 1.8 : 1) * ak);
+          : Math.max(REGEN_MIN,
+              Math.round((FISH_REGEN + lv('fish')*3 + (lv('fishBig')?10:0) + waterR)
+                         * allM * (lv('chibi') ? 1.8 : 1) * ak * REGEN_K));
 
   s.chestTarget = Math.min(16, Math.round((BASE_CHEST + lv('chest') + earthC + (lv('wildBox')?3:0))
                   * (lv('chest3') ? 3 : 1) * allM));
@@ -1528,6 +1533,13 @@ let held = false, resultTxt = null;
 /* 投の開始。かけひきタイムなら先にそれを出す */
 function beginCast(){
   const n = castNo();
+  // レア魚は「その1投だけ」。前の投で 釣り のがしたら 帰ってしまう
+  for (const f of fishPool){
+    if (f.alive && f.rare && !f.caught){
+      f.alive = false;
+      burstParticles(f.x, f.y, 10, '#b6f0ff');
+    }
+  }
   // かけひきタイムは 自動では開かない。券をためて 自分でボタンを押す
   if (!st.evtDone[n]){ st.evtDone[n] = 1; runCastEvents(n); }
   startCast();
