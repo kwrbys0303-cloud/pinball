@@ -518,7 +518,7 @@
     <div id="puHead"><div class="t" id="puTitle">パワーアップ</div>
       <div class="m">しょじきん <b id="puMoney">¥0</b></div></div>
     <div id="cards"></div>
-    <button id="passBtn">見おくる（お金をもらう）</button>
+    <button id="passBtn">どれも えらばない</button>
     <div id="elArea"></div>
     <div id="slotArea"></div>
   </div>
@@ -982,25 +982,26 @@ const CARDS = [
   { id:'scatter',t:'t', slot:'t', max:1, ic:'💫', nm:'ちりぢりバラバラ',
     good:'すぐに 魚 +50匹／毎投 +8匹・ワッカ +20', bad:'魚が 群れなくなる' },
   { id:'wild',   t:'t', slot:'t', max:1, ic:'😤', nm:'さかなブチギレ',
-    good:'スコア 1.8倍',          bad:'ぜんぶの魚が ルアーから 逃げる' },
+    good:'スコア 1.6倍',          bad:'ぜんぶの魚が ルアーから 逃げる' },
   { id:'wildBox',t:'t', slot:'t', max:1, ic:'💨', nm:'あばれ宝箱',
     good:'たからばこ +3・こうか +1回', bad:'たからばこが もっと はやく 逃げる' },
   { id:'pricey', t:'t', slot:'t', max:1, ic:'💸', nm:'ねだんつりあげ',
     good:'えらべる数が 4つになる',  bad:'パワーアップの ねだんが 1.3倍' },
   { id:'quick',  t:'t', slot:'t', max:1, ic:'⚡', nm:'いなずまカーソル',
-    good:'スコア 1.7倍',          bad:'ねらいのカーソルが 1.8倍はやい' },
+    good:'スコア 1.5倍',          bad:'ねらいのカーソルが 2.0倍はやい' },
   { id:'sink',   t:'t', slot:'t', max:1, ic:'🪨', nm:'ふかもぐり',
-    good:'深い魚が ぐっと ふえる',  bad:'ルアーが 1.5倍はやく しずむ' },
+    good:'深い魚が ぐっと ふえる',  bad:'ルアーが 2.5倍はやく しずむ' },
   { id:'focus',  t:'t', slot:'t', max:1, ic:'🎯', nm:'いってんしゅうちゅう',
-    good:'スコア 1.9倍',          bad:'ワッカが 小さくなる' },
+    good:'スコア 1.8倍',          bad:'ワッカが かなり 小さくなる' },
   { id:'net',    t:'t', slot:'t', max:1, ic:'🕸️', nm:'どデカあみ',
-    good:'ワッカ +45',            bad:'デカい魚の スコアが 4割ダウン' },
+    good:'ワッカ +45',            bad:'デカい魚の スコアが 2割ダウン' },
   { id:'desper', t:'t', slot:'t', max:1, ic:'🔥', nm:'さいごのしょうぶ',
-    good:'スコア 3.0倍',          bad:'魚が もう わかなくなる' },
+    good:'スコア 3.0倍',
+    bad:'魚が わかなくなる／このあとの 魚群・ヌシ・レア魚・大漁タイムも 来ない' },
   /* ---- 1回きり（枠なし・やすい）---- */
   { id:'tFish',  t:'x', slot:null, max:99, ic:'🍤', nm:'まきエサどっさり',     ds:'つぎの1投だけ：その場に 魚 +30匹' },
   { id:'tRing',  t:'x', slot:null, max:99, ic:'💠', nm:'みずすまし',   ds:'つぎの1投だけ：ワッカ +40' },
-  { id:'tScore', t:'x', slot:null, max:99, ic:'✨', nm:'チャンスタイム', ds:'つぎの1投だけ：スコア +0.8倍' },
+  { id:'tScore', t:'x', slot:null, max:99, ic:'✨', nm:'チャンスタイム', ds:'つぎの1投だけ：スコア +0.5倍' },
   { id:'tChest', t:'x', slot:null, max:99, ic:'🎁', nm:'タカラのやま', ds:'つぎの1投だけ：たからばこ +3' },
   { id:'tPull',  t:'x', slot:null, max:99, ic:'📣', nm:'さかなよびぶえ',     ds:'つぎの1投だけ：引きよせ +3' },
 ];
@@ -1124,8 +1125,8 @@ const SYNS = [
   { id:'wind6',  el:'wind',  need:7, nm:'だいとっぷう',     big:'ワッカも帯も 超かくだい！', d:'+60・帯1.7倍' },
   { id:'earth3', el:'earth', need:4, nm:'たからのにおい',   big:'たからばこ 大ぞうりょう！', d:'+3・小判2.5倍' },
   { id:'earth6', el:'earth', need:7, nm:'かいぞく王',       big:'たからが 超おいしい！', d:'デカ魚+40%・こうか2回・小判3倍' },
-  { id:'all2',   el:'all',   need:2, nm:'よくばりセット',   big:'ワッカ・魚・たからばこ・スコアが アップ！', d:'+13%' },
-  { id:'all3',   el:'all',   need:3, nm:'オールスター',     big:'ワッカ・魚・たからばこ・スコアが 超アップ！', d:'+35%' },
+  { id:'all2',   el:'all',   need:2, nm:'よくばりセット',   big:'ワッカ・魚・たからばこ・スコアが アップ！', d:'+25%' },
+  { id:'all3',   el:'all',   need:3, nm:'オールスター',     big:'ワッカ・魚・たからばこ・スコアが 超アップ！', d:'+50%' },
 ];
 const synHas = (t,s)=> s.el==='all' ? ELS.every(e=>t[e]>=s.need) : t[s.el] >= s.need;
 const synShort = s => s.el==='all' ? `ぜんぶ${s.need}` : `${EL[s.el].n}${s.need}`;
@@ -1243,6 +1244,8 @@ function newState(){
     rec:{ maxCatch:0, chest:0, rare:0, tuna:0, lastScore:0, temp:0 },
     radius:0, hlineH:0, vlineW:0, xlineW:0, pull:0, regen:FISH_REGEN,
     chestTarget:BASE_CHEST, chestTimes:1, coinMult:1, moneyMult:1, scoreMult:1, rankP:0, dual:0,
+    // たからばこの めぐみ（このプレイの あいだ ずっと つづく）
+    gift:{ fish:0, score:0, ring:0, pull:0 },
     freePU:0,                       // すぐに ひける パワーアップの 残り回数
     fishScale:1, cursorSpd:CURSOR_SPD, dropSpd:DROP_SPD,
   };
@@ -1271,14 +1274,14 @@ function recompute(){
   const windA  = on('wind6') ? 60   : on('wind3') ? 34   : 0;
   const waterR = on('water6') ? 26  : on('water3') ? 9    : 0;
   const earthC = on('earth6') ? 3 : on('earth3') ? 3 : 0;
-  const allM   = on('all3') ? 1.35 : on('all2') ? 1.13 : 1;
+  const allM   = on('all3') ? 1.50 : on('all2') ? 1.25 : 1;
 
   s.dual = lv('dual') > 0;
   s.stageArea = seaArea(s.k, lv('umi')>0);
 
   let r = BASE_R + lv('radius')*20 + windA + s.pend.ring
         + (lv('net') ? 45 : 0) + (lv('ring') ? 70 : 0) + (lv('scatter') ? 20 : 0);
-  r *= (lv('focus') ? 0.72 : 1) * allM;
+  r *= (lv('focus') ? 0.55 : 1) * allM * (1 + s.gift.ring);
   s.radius = r;
 
   const bm = on('wind6') ? 1.7 : 1;
@@ -1287,39 +1290,42 @@ function recompute(){
   s.xlineW = lv('xline') ? (17 + 15*(lv('xline')-1)) * bm : 0;
 
   s.pull = Math.min(PULL_CAP,
-    lv('pull') + lv('pullBig')*2 + (on('wind6') ? 1 : 0) + s.pend.pull);
+    lv('pull') + lv('pullBig')*2 + (on('wind6') ? 1 : 0) + s.pend.pull + s.gift.pull);
 
   const ak = Math.max(0.25, s.stageArea);
   // 海の広さを かけると せまい海で 7〜9匹まで 落ちて 枯れてしまうので、
   // 下限を もうける（REGEN_MIN）。ふえすぎたら REGEN_K を さげて 一括調整する
+  const tradeRegen = (lv('umi') ? 8 : 0) + (lv('scatter') ? 8 : 0);
   s.regen = lv('desper') ? 0
           : Math.max(REGEN_MIN,
-              Math.round((FISH_REGEN + lv('fish')*3 + (lv('fishBig')?10:0) + waterR)
+              Math.round((FISH_REGEN + lv('fish')*3 + (lv('fishBig')?10:0)
+                          + waterR + tradeRegen + s.gift.fish)
                          * allM * (lv('chibi') ? 1.8 : 1) * ak * REGEN_K));
 
   s.chestTarget = Math.min(16, Math.round((BASE_CHEST + lv('chest') + earthC + (lv('wildBox')?3:0))
                   * (lv('chest3') ? 3 : 1) * allM));
   s.chestTimes = 1 + lv('lucky') + (on('earth6') ? 1 : 0) + (lv('wildBox') ? 1 : 0);
   s.coinMult   = (earthC ? 2.5 : 1) * (on('earth6') ? 1.2 : 1);
-  s.moneyMult  = lv('purse') ? 1.5 : 1;          // めがみのさいふ
+  s.moneyMult  = (lv('purse') ? 1.5 : 1) * (1 + s.gift.score);   // めがみのさいふ＋しおのめぐみ
 
   // トレードオフのスコア倍率は 3枠ぶん掛け合わさると ×7 を超えるので合計に上限。
   // v10：さいごのしょうぶ を 3.0倍にしたので 上限が 3.0 のままだと
   //      1枚で 使いきってしまい、ほかの かけひきカードが 無意味になる
   let tMul = 1;
-  if (lv('focus'))  tMul *= 1.9;
+  if (lv('focus'))  tMul *= 1.8;
   if (lv('desper')) tMul *= 3.0;
   if (lv('chibi'))  tMul *= 1.5;
-  if (lv('wild'))   tMul *= 1.8;
-  if (lv('quick'))  tMul *= 1.7;
+  if (lv('wild'))   tMul *= 1.6;
+  if (lv('quick'))  tMul *= 1.5;
   s.tradeMul = Math.min(4.2, tMul);
   s.scoreMult = (1 + lv('score')*0.18) * fireM * allM * (1 + s.pend.scoreAdd)
-              * (lv('rich')?2:1) * (lv('pray')?1.5:1) * s.tradeMul;
+              * (lv('rich')?2:1) * (lv('pray')?1.5:1) * (1 + s.gift.score)
+              * s.tradeMul;
 
   s.rankP = lv('rank')*0.12 + lv('deep')*0.05 + (on('earth6') ? 0.40 : 0) + (lv('sink') ? 0.20 : 0);
   s.fishScale = ak * (lv('chibi') ? 1.8 : 1);
-  s.cursorSpd = CURSOR_SPD * (lv('quick') ? 1.8 : 1);
-  s.dropSpd   = DROP_SPD   * (lv('sink')  ? 1.5 : 1);
+  s.cursorSpd = CURSOR_SPD * (lv('quick') ? 2.0 : 1);
+  s.dropSpd   = DROP_SPD   * (lv('sink')  ? 2.5 : 1);
   return [...s.syn].filter(id=>!before.has(id));
 }
 function applySynBurst(ids){
@@ -1467,9 +1473,32 @@ function spawnChest(){
   c.vx = (Math.random()<0.5?-1:1)*(45+Math.random()*26);
   c.vy = (Math.random()-0.5)*40;
   c.tmr = 1.0 + Math.random()*1.2; c.warn = 0; c.dash = 0;
-  c.kind = ['coin','ticket','swarm','storm','flag','coin'][(Math.random()*6)|0];
+  // v11：1投だけの こうかを やめ、のこりずっと つづく「めぐみ」に。
+  //      宝箱を 取る うれしさが 1投で 消えていた
+  c.kind = CHEST_ROLL[(Math.random()*CHEST_ROLL.length)|0];
 }
 
+/* たからばこの 中身。おなじ ものが 何度 出ても よいように 重みを つける。
+   ずっと つづく こうかは 積み上がると こわれるので、それぞれ 上限を もうけた */
+const CHEST_ROLL = ['coin','coin','ticket',
+                    'fish','fish','score','ring','pull'];
+const CHEST_CAP  = { fish:30, score:1.0, ring:0.8 };   // 積み上げの 上限
+const CHEST_NM   = {
+  coin:  ['💰','小判'],
+  ticket:['🎫','かけひき券'],
+  fish:  ['🐟','うおのめぐみ'],
+  score: ['✨','しおのめぐみ'],
+  ring:  ['🌊','なみのめぐみ'],
+  pull:  ['🧲','いそのめぐみ'],
+};
+/* たからばこの お金は「つぎの パワーアップの 3分の1」。
+   ただし ねだんを 上げ下げする カード（ねだんつりあげ・たつじんのハチマキ）の
+   えいきょうは 受けない。ハチマキを 取ったら もらえる額が 半分に なる、
+   という へんな ことが 起きるため */
+function chestCoin(){
+  const base = Math.round(30 * Math.pow(1.8, st.puCount));
+  return Math.max(20, Math.round(base / 3 * st.coinMult * st.moneyMult));
+}
 /* かけひき券。枠が埋まっていれば お金に変わる（ムダにならない） */
 function gainTicket(){
   if (usedIn('t') + st.tickets < st.tradeMax){ st.tickets++; updateBtns(); return '🎫 かけひき券！'; }
@@ -1494,6 +1523,9 @@ function flushPendSpawns(){
    （パワーアップを買うたびに startCast が呼ばれるので、
      ここを分けないと 魚群も大漁タイムも 何度でも湧いてしまう） */
 function runCastEvents(n){
+  // さいごのしょうぶ を 取ったら、このあとの もよおしは ぜんぶ 来ない。
+  // スコア3倍の かわりに「海が しずまりかえる」ことで つりあいを とる
+  if (lv('desper')) return;
   const ev = CHANCE[n];
   if (RARE_CASTS.includes(n)) spawnRare(2);
   if (ev === 'school'){
@@ -1628,7 +1660,7 @@ function catchValue(list){
     else if (f.rare) v = Math.round(st.rareType.score * st.scoreMult);
     else {
       let m = st.scoreMult * mkMul(f.rank) * st.fmod.mult[f.rank];  // 強い魚ほど おいしい
-      if (lv('net') && f.rank >= 3) m *= 0.6;
+      if (lv('net') && f.rank >= 3) m *= 0.8;
       if (f.clone) m *= 0.5;                    // 分身は半分
       v = Math.round(RANKS[f.rank].sc * m);
     }
@@ -1680,14 +1712,29 @@ function tally(){
   st.rec.chest += reel.chests.length;
   for (const c of reel.chests){
     for (let i=0;i<st.chestTimes;i++){
-      if (c.kind==='coin'){ const g = Math.round(180*Math.min(st.scoreMult,5)*st.coinMult);
-                            mo += g; msgs.push('¥'+g); }
+      const G = st.gift;
+      if (c.kind==='coin'){ const g = chestCoin(); mo += g; msgs.push('¥'+g.toLocaleString()); }
       else if (c.kind==='ticket'){ if (i===0) msgs.push(gainTicket()); }
-      // ここから下は すべて 足し算（上限つき）
-      else if (c.kind==='swarm'){ P.fish     = Math.min(PEND_CAP.fish,     P.fish+30);    msgs.push('つぎ 魚 +30'); }
-      else if (c.kind==='storm'){ P.ring     = Math.min(PEND_CAP.ring,     P.ring+30);    msgs.push('つぎ ワッカ +30'); }
-      else {                      P.scoreAdd = Math.min(PEND_CAP.scoreAdd, P.scoreAdd+0.5); msgs.push('つぎ スコア +0.5倍'); }
+      // ここから下は のこりずっと つづく。上限まで 積み上がる
+      else if (c.kind==='fish'){
+        P.fish = Math.min(PEND_CAP.fish, P.fish + 8);            // すぐに 8匹
+        if (G.fish < CHEST_CAP.fish){ G.fish = Math.min(CHEST_CAP.fish, G.fish + 3);
+          msgs.push('🐟 いま+8・毎投+3'); } else msgs.push('🐟 いま+8');
+      }
+      else if (c.kind==='score'){
+        if (G.score < CHEST_CAP.score){ G.score = Math.round((G.score + 0.1)*10)/10;
+          msgs.push('✨ スコアとお金 +0.1倍'); } else msgs.push('✨ もう いっぱい');
+      }
+      else if (c.kind==='ring'){
+        if (G.ring < CHEST_CAP.ring){ G.ring = Math.round((G.ring + 0.1)*10)/10;
+          msgs.push('🌊 ワッカ +0.1倍'); } else msgs.push('🌊 もう いっぱい');
+      }
+      else if (c.kind==='pull'){
+        if (G.pull < PULL_CAP){ G.pull++; msgs.push('🧲 引きよせ +1'); }
+        else msgs.push('🧲 もう いっぱい');
+      }
     }
+    recompute();
   }
   if (bossGot){
     const B = st.bossType;
@@ -2635,7 +2682,7 @@ let multFlash = 0, lastMultKey = '';
 /* 1匹あたりの いまの点数（時価・シナジー・魚のパワーアップ 全部こみ） */
 function nowScore(rank){
   return Math.round(RANKS[rank].sc * st.scoreMult * mkMul(rank) * st.fmod.mult[rank]
-                    * (lv('net') && rank>=3 ? 0.6 : 1));
+                    * (lv('net') && rank>=3 ? 0.8 : 1));
 }
 function multParts(){
   const p = [];
@@ -2953,7 +3000,10 @@ function buildSheet(list, opt){
     d.onclick = ()=>choose(c, free, d);
     cardsEl.appendChild(d);
   }
-  passBtn.style.display = 'none';   // 効果がおいしすぎて断る理由がないので 見おくるは廃止
+  // かけひきタイムだけ「どれも えらばない」を 出す。
+  // ふつうの パワーアップは お金を はらう前なので 断る意味が ない
+  passBtn.style.display = trade ? 'block' : 'none';
+  passBtn.textContent = 'どれも えらばない（券は もどらない）';
   renderSlots(); renderElGauge();
   hideTut(); modal.classList.add('show');
   if (trade && !st.tut.tdPick){ st.tut.tdPick = 1;
@@ -3064,9 +3114,9 @@ function applyPick(c, free){
   st.picks.push(c.nm);
   if (c.t === 'x'){
     const P = st.pend;
-    if (c.id==='tFish')  P.fish     = Math.min(PEND_CAP.fish, P.fish+20);
+    if (c.id==='tFish')  P.fish     = Math.min(PEND_CAP.fish, P.fish+30);
     if (c.id==='tRing')  P.ring     = Math.min(PEND_CAP.ring, P.ring+40);
-    if (c.id==='tScore') P.scoreAdd = Math.min(PEND_CAP.scoreAdd, P.scoreAdd+0.8);
+    if (c.id==='tScore') P.scoreAdd = Math.min(PEND_CAP.scoreAdd, P.scoreAdd+0.5);
     if (c.id==='tChest') P.chest   += 3;
     if (c.id==='tPull')  P.pull     = Math.min(PEND_CAP.pull, P.pull+3);
     st.lvl[c.id] = 0; st.rec.temp++;
@@ -3252,6 +3302,16 @@ function openStatus(){
       <div class="bl" style="color:${el.c}">${el.ic}</div>
       <div class="bl">${c.max>1?('Lv '+lv(c.id)+'/'+c.max):''}</div></div>`;
   }
+  const G = s.gift;
+  if (G.fish || G.score || G.ring || G.pull){
+    h += '<div class="stSec">たからばこの めぐみ</div><div class="statGrid">';
+    const gr = [];
+    if (G.fish)  gr.push(['🐟 毎投の わく数', '+'+G.fish+'匹' + (G.fish>=CHEST_CAP.fish?' MAX':'')]);
+    if (G.score) gr.push(['✨ スコアとお金', '+'+G.score.toFixed(1)+'倍' + (G.score>=CHEST_CAP.score?' MAX':'')]);
+    if (G.ring)  gr.push(['🌊 ワッカ', '+'+G.ring.toFixed(1)+'倍' + (G.ring>=CHEST_CAP.ring?' MAX':'')]);
+    if (G.pull)  gr.push(['🧲 引きよせ', '+'+G.pull+'匹']);
+    h += gr.map(([a,b])=>`<div><span>${a}</span><b>${b}</b></div>`).join('') + '</div>';
+  }
   h += '<div class="stSec">いまの つよさ</div><div class="statGrid">';
   const rows = [
     ['ワッカ', Math.round(s.radius)], ['ヨコ帯', s.hlineH?('±'+Math.round(s.hlineH)):'なし'],
@@ -3275,6 +3335,17 @@ function openStatus(){
   stBody.innerHTML = h; stBody.scrollTop = 0;
   statusSheet.classList.add('show');
 }
+/* かけひきタイムを 見おくる。券は もどらない ＝ 開けた時点で 1枚 つかう。
+   「中身を 見てから 決められる」だけでも 十分 うれしいので、
+   もどしてしまうと ノーリスクで 引きなおせて しまう */
+passBtn.addEventListener('click', ()=>{
+  if (phase !== 'powerup' || !curSheet.trade) return;
+  modal.classList.remove('show');
+  st.tradeUsed++;
+  for (const el of cardsEl.children){ el.style.opacity=''; el.style.visibility=''; }
+  updatePUBtn();
+  if (st.castsLeft <= 0) gameOver(); else beginCast();
+});
 $('stBtn').addEventListener('pointerdown', e=>{
   e.stopPropagation();
   if (st && (phase==='aim' || phase==='powerup')) openStatus();
