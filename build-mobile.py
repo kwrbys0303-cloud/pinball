@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-fishing-v11.html から スマホ配布用の index.html を つくる。
+fishing-v12.html から スマホ配布用の index.html を つくる。
 
 ゲームの中身は 1文字も 変えない。まわりに スマホ用の 上着を 着せるだけ:
   - iPhone / Android の 画面まわりの おまじない（meta タグ）
@@ -12,15 +12,15 @@ fishing-v11.html から スマホ配布用の index.html を つくる。
 """
 import re, sys, pathlib
 
-SRC = pathlib.Path('fishing-v11.html')
+SRC = pathlib.Path('fishing-v12.html')
 OUT = pathlib.Path('index.html')
 
 HEAD = '''<!DOCTYPE html>
 <!--
   ツリツリバースト 〜さかなの逆襲〜  スマホ配布版
   ============================================================
-  中身は fishing-v11.html と 同じ。build-mobile.py で つくっています。
-  直すときは fishing-v11.html を 直して、もう一度 build-mobile.py を
+  中身は fishing-v12.html と 同じ。build-mobile.py で つくっています。
+  直すときは fishing-v12.html を 直して、もう一度 build-mobile.py を
   走らせてください。ここを 直しても つぎの ビルドで 消えます。
 -->
 <html lang="ja">
