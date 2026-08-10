@@ -5,100 +5,410 @@
       "id": "shallow",
       "name": "はじまりの浅瀬",
       "fish": [
-        { "rank": 1, "name": "サンゴスズメ",     "file": "batch2/1000016902.png", "note": "青い体に黄色いヒレ", "confident": true },
-        { "rank": 2, "name": "シマハコフグ",     "file": "batch2/1000016901.png", "note": "黄色い体に黒いしま", "confident": true },
-        { "rank": 3, "name": "アカヒレエビ",     "file": "batch2/1000016900.png", "note": "白い体に真っ赤なハサミ、長いひげ", "confident": true },
-        { "rank": 4, "name": "ツノカワハギ",     "file": "batch2/1000016899.png", "note": "水色の平たい体、額から一本の角", "confident": true },
-        { "rank": 5, "name": "オオサンゴダイ",   "file": "batch2/1000016903.png", "note": "赤橙の大型魚、背びれがサンゴ状に枝分かれ", "confident": true }
+        {
+          "rank": 1,
+          "name": "サンゴスズメ",
+          "file": "batch2/1000016902.png",
+          "note": "青い体に黄色いヒレ",
+          "confident": true
+        },
+        {
+          "rank": 2,
+          "name": "シマハコフグ",
+          "file": "batch2/1000016901.png",
+          "note": "黄色い体に黒いしま",
+          "confident": true
+        },
+        {
+          "rank": 3,
+          "name": "アカヒレエビ",
+          "file": "batch2/1000016900.png",
+          "note": "白い体に真っ赤なハサミ、長いひげ",
+          "confident": true
+        },
+        {
+          "rank": 4,
+          "name": "ツノカワハギ",
+          "file": "batch2/1000016899.png",
+          "note": "水色の平たい体、額から一本の角",
+          "confident": true
+        },
+        {
+          "rank": 5,
+          "name": "オオサンゴダイ",
+          "file": "batch2/1000016903.png",
+          "note": "赤橙の大型魚、背びれがサンゴ状に枝分かれ",
+          "confident": true
+        }
       ],
-      "rare": { "name": "クリスタルクラゲ", "file": "batch2/1000016885.png", "note": "虹色にすきとおったクラゲ、触手の先が宝石", "confident": true },
-      "boss": { "name": "キングイセエビ",   "file": "batch4/1000016937.png", "note": "真っ赤なイセエビ、とげとげの甲羅と長いひげ", "confident": true }
+      "rare": {
+        "name": "クリスタルクラゲ",
+        "file": "batch2/1000016885.png",
+        "note": "虹色にすきとおったクラゲ、触手の先が宝石",
+        "confident": true
+      },
+      "boss": {
+        "name": "キングイセエビ",
+        "file": "batch4/1000016937.png",
+        "note": "真っ赤なイセエビ、とげとげの甲羅と長いひげ",
+        "confident": true
+      }
     },
     {
       "id": "twin",
       "name": "ふたごの入江",
       "fish": [
-        { "rank": 1, "name": "フタスジコ",       "file": "batch3/1000016929.png", "note": "銀色の小魚、体に黒い線が二本", "confident": true },
-        { "rank": 2, "name": "フタホシカニ",     "file": "batch3/1000016933.png", "note": "丸い甲羅に左右一つずつ白い星", "confident": true },
-        { "rank": 3, "name": "チビウツボ",       "file": "batch3/1000016931.png", "note": "黄色と黒のまだら、細長い体", "confident": true },
-        { "rank": 4, "name": "ハサミカマス",     "file": "batch3/1000016932.png", "note": "細長い銀色、尾びれが大きく二股", "confident": false },
-        { "rank": 5, "name": "ツインバラクーダ", "file": "batch3/1000016930.png", "note": "大型の銀色魚、二枚重なった尾びれ", "confident": false }
+        {
+          "rank": 1,
+          "name": "フタスジコ",
+          "file": "batch3/1000016929.png",
+          "note": "銀色の小魚、体に黒い線が二本",
+          "confident": true
+        },
+        {
+          "rank": 2,
+          "name": "フタホシカニ",
+          "file": "batch3/1000016933.png",
+          "note": "丸い甲羅に左右一つずつ白い星",
+          "confident": true
+        },
+        {
+          "rank": 3,
+          "name": "チビウツボ",
+          "file": "batch3/1000016931.png",
+          "note": "黄色と黒のまだら、細長い体",
+          "confident": true
+        },
+        {
+          "rank": 4,
+          "name": "ハサミカマス",
+          "file": "batch3/1000016932.png",
+          "note": "細長い銀色、尾びれが大きく二股",
+          "confident": false
+        },
+        {
+          "rank": 5,
+          "name": "ツインバラクーダ",
+          "file": "batch3/1000016930.png",
+          "note": "大型の銀色魚、二枚重なった尾びれ",
+          "confident": false
+        }
       ],
-      "rare": { "name": "フタゴウツボ", "file": "batch4/1000016938.png", "note": "頭が二つある金と黒のウツボ", "confident": true },
-      "boss": { "name": "ツインカジキ", "file": "batch3/1000016891.png", "note": "青と金のカジキ", "confident": true }
+      "rare": {
+        "name": "フタゴウツボ",
+        "file": "batch4/1000016938.png",
+        "note": "頭が二つある金と黒のウツボ",
+        "confident": true
+      },
+      "boss": {
+        "name": "ツインカジキ",
+        "file": "batch3/1000016891.png",
+        "note": "青と金のカジキ",
+        "confident": true
+      }
     },
     {
       "id": "moon",
       "name": "満月の湾",
       "fish": [
-        { "rank": 1, "name": "ホシスズメ",   "file": "batch2/1000016906.png", "note": "濃紺の小魚に白い点が星空のように", "confident": true },
-        { "rank": 2, "name": "ミカヅキハゼ", "file": "batch2/1000016904.png", "note": "青紫の小魚、黄金の三日月もようと三日月の尾びれ", "confident": true },
-        { "rank": 3, "name": "ツキクラゲ",   "file": "batch2/1000016908.png", "note": "半透明の丸い体、中央に満月もよう", "confident": true },
-        { "rank": 4, "name": "ギンヨクエイ", "file": "batch4/1000016942.png", "note": "銀色のエイ、翼の端が青白く光る", "confident": true },
-        { "rank": 5, "name": "ギンヅキダイ", "file": "batch3/1000016892.png", "note": "大型の銀白色魚、体の中央に黄金の月。仕様は満月だが絵は三日月", "confident": false }
+        {
+          "rank": 1,
+          "name": "ホシスズメ",
+          "file": "batch2/1000016906.png",
+          "note": "濃紺の小魚に白い点が星空のように",
+          "confident": true
+        },
+        {
+          "rank": 2,
+          "name": "ミカヅキハゼ",
+          "file": "batch2/1000016904.png",
+          "note": "青紫の小魚、黄金の三日月もようと三日月の尾びれ",
+          "confident": true
+        },
+        {
+          "rank": 3,
+          "name": "ツキクラゲ",
+          "file": "batch2/1000016908.png",
+          "note": "半透明の丸い体、中央に満月もよう",
+          "confident": true
+        },
+        {
+          "rank": 4,
+          "name": "ギンヨクエイ",
+          "file": "batch4/1000016942.png",
+          "note": "銀色のエイ、翼の端が青白く光る",
+          "confident": true
+        },
+        {
+          "rank": 5,
+          "name": "ギンヅキダイ",
+          "file": "batch3/1000016892.png",
+          "note": "大型の銀白色魚、体の中央に黄金の月。仕様は満月だが絵は三日月",
+          "confident": false
+        }
       ],
-      "rare": { "name": "ルナフィッシュ", "file": "batch4/1000016941.png", "note": "青と金の魚、尾の先に大きな三日月", "confident": true },
-      "boss": { "name": "ツキクジラ",     "file": "batch4/1000016934.png", "note": "銀色のクジラ、体に黄金の三日月", "confident": true }
+      "rare": {
+        "name": "ルナフィッシュ",
+        "file": "batch4/1000016941.png",
+        "note": "青と金の魚、尾の先に大きな三日月",
+        "confident": true
+      },
+      "boss": {
+        "name": "ツキクジラ",
+        "file": "batch4/1000016934.png",
+        "note": "銀色のクジラ、体に黄金の三日月",
+        "confident": true
+      }
     },
     {
       "id": "dragon",
       "name": "龍のたて穴",
       "fish": [
-        { "rank": 1, "name": "ムラサキスズメ", "file": "batch2/1000016907.png", "note": "紫の小魚、ヒレだけ銀色", "confident": true },
-        { "rank": 2, "name": "ツノイワガニ",   "file": "batch2/1000016905.png", "note": "紫水晶の甲羅に二本の角", "confident": true },
-        { "rank": 3, "name": "リュウノヒゲ",   "file": "batch4/1000016939.png", "note": "青紫の魚、口元から非常に長いヒゲ", "confident": true },
-        { "rank": 4, "name": "タテアナウツボ", "file": "batch4/1000016940.png", "note": "紫灰色に銀の縦じま、巨大な口", "confident": true },
-        { "rank": 5, "name": "リュウガウナギ", "file": "batch1/1000016911.png", "note": "銀紫の長い体、背びれが龍のたてがみ", "confident": true }
+        {
+          "rank": 1,
+          "name": "ムラサキスズメ",
+          "file": "batch2/1000016907.png",
+          "note": "紫の小魚、ヒレだけ銀色",
+          "confident": true
+        },
+        {
+          "rank": 2,
+          "name": "ツノイワガニ",
+          "file": "batch2/1000016905.png",
+          "note": "紫水晶の甲羅に二本の角",
+          "confident": true
+        },
+        {
+          "rank": 3,
+          "name": "リュウノヒゲ",
+          "file": "batch4/1000016939.png",
+          "note": "青紫の魚、口元から非常に長いヒゲ",
+          "confident": true
+        },
+        {
+          "rank": 4,
+          "name": "タテアナウツボ",
+          "file": "batch4/1000016940.png",
+          "note": "紫灰色に銀の縦じま、巨大な口",
+          "confident": true
+        },
+        {
+          "rank": 5,
+          "name": "リュウガウナギ",
+          "file": "batch1/1000016911.png",
+          "note": "銀紫の長い体、背びれが龍のたてがみ",
+          "confident": true
+        }
       ],
-      "rare": { "name": "ギンガウナギ", "file": "batch3/1000016890.png", "note": "銀河をまとった長いウナギ", "confident": true },
-      "boss": { "name": "海龍",         "file": "batch1/1000016918.png", "note": "黒と赤の龍", "confident": true }
+      "rare": {
+        "name": "ギンガウナギ",
+        "file": "batch3/1000016890.png",
+        "note": "銀河をまとった長いウナギ",
+        "confident": true
+      },
+      "boss": {
+        "name": "海龍",
+        "file": "batch1/1000016918.png",
+        "note": "黒と赤の龍",
+        "confident": true
+      }
     },
     {
       "id": "sky",
       "name": "天空の雲海",
       "fish": [
-        { "rank": 1, "name": "クモコ",       "file": "batch1/1000016920.png", "note": "白く丸い小魚に水色の雲もよう", "confident": true },
-        { "rank": 2, "name": "ハネトビウオ", "file": "batch1/1000016914.png", "note": "胸びれが翼のように広がる青い魚", "confident": true },
-        { "rank": 3, "name": "カミナリフグ", "file": "batch1/1000016917.png", "note": "灰色の丸い体に黄色い稲妻、トゲ", "confident": true },
-        { "rank": 4, "name": "カゼクラゲ",   "file": "batch1/1000016919.png", "note": "リボン状の触手が風になびく透明クラゲ", "confident": true },
-        { "rank": 5, "name": "ソラマグロ",   "file": "batch1/1000016923.png", "note": "空色の巨大マグロ、翼のような胸びれ", "confident": true }
+        {
+          "rank": 1,
+          "name": "クモコ",
+          "file": "batch1/1000016920.png",
+          "note": "白く丸い小魚に水色の雲もよう",
+          "confident": true
+        },
+        {
+          "rank": 2,
+          "name": "ハネトビウオ",
+          "file": "batch1/1000016914.png",
+          "note": "胸びれが翼のように広がる青い魚",
+          "confident": true
+        },
+        {
+          "rank": 3,
+          "name": "カミナリフグ",
+          "file": "batch1/1000016917.png",
+          "note": "灰色の丸い体に黄色い稲妻、トゲ",
+          "confident": true
+        },
+        {
+          "rank": 4,
+          "name": "カゼクラゲ",
+          "file": "batch1/1000016919.png",
+          "note": "リボン状の触手が風になびく透明クラゲ",
+          "confident": true
+        },
+        {
+          "rank": 5,
+          "name": "ソラマグロ",
+          "file": "batch1/1000016923.png",
+          "note": "空色の巨大マグロ、翼のような胸びれ",
+          "confident": true
+        }
       ],
-      "rare": { "name": "カミナリイルカ", "file": "batch2/1000016893.png", "note": "黄色い稲妻をまとったイルカ", "confident": true },
-      "boss": { "name": "ホシクジラ",     "file": "batch4/1000016936.png", "note": "青いクジラ、星と雲をまとう", "confident": true }
+      "rare": {
+        "name": "カミナリイルカ",
+        "file": "batch2/1000016893.png",
+        "note": "黄色い稲妻をまとったイルカ",
+        "confident": true
+      },
+      "boss": {
+        "name": "ホシクジラ",
+        "file": "batch4/1000016936.png",
+        "note": "青いクジラ、星と雲をまとう",
+        "confident": true
+      }
     },
     {
       "id": "abyss",
       "name": "深海の大穴",
       "fish": [
-        { "rank": 1, "name": "ヒカリコ",         "file": "batch1/1000016922.png", "note": "黒い体、腹が青く光る。ただし絵はチョウチン付き。仕様どおりの小魚がほしければ差しかえ", "confident": false },
-        { "rank": 2, "name": "ミニグソク",       "file": "batch1/1000016921.png", "note": "灰色の甲殻におおわれた小さな深海生物", "confident": true },
-        { "rank": 3, "name": "チョウチンアンコウ", "file": "batch1/1000016915.png", "note": "ずんぐりした黒い体、大きな口、青い発光器", "confident": true },
-        { "rank": 4, "name": "クロガネウナギ",   "file": "batch4/1000016935.png", "note": "金属質の黒い長い体、赤く光る目と体側", "confident": true },
-        { "rank": 5, "name": "アビスハタ",       "file": "batch1/1000016916.png", "note": "黒紫の巨大ハタ、体側に青い発光線", "confident": true }
+        {
+          "rank": 1,
+          "name": "ヒカリコ",
+          "file": "batch1/1000016922.png",
+          "note": "黒い体、腹が青く光る。ただし絵はチョウチン付き。仕様どおりの小魚がほしければ差しかえ",
+          "confident": false
+        },
+        {
+          "rank": 2,
+          "name": "ミニグソク",
+          "file": "batch1/1000016921.png",
+          "note": "灰色の甲殻におおわれた小さな深海生物",
+          "confident": true
+        },
+        {
+          "rank": 3,
+          "name": "チョウチンアンコウ",
+          "file": "batch1/1000016915.png",
+          "note": "ずんぐりした黒い体、大きな口、青い発光器",
+          "confident": true
+        },
+        {
+          "rank": 4,
+          "name": "クロガネウナギ",
+          "file": "batch4/1000016935.png",
+          "note": "金属質の黒い長い体、赤く光る目と体側",
+          "confident": true
+        },
+        {
+          "rank": 5,
+          "name": "アビスハタ",
+          "file": "batch1/1000016916.png",
+          "note": "黒紫の巨大ハタ、体側に青い発光線",
+          "confident": true
+        }
       ],
-      "rare": { "name": "ホネメガロドン", "file": "batch2/1000016897.png", "note": "骨のよろいをまとったサメ", "confident": true },
-      "boss": { "name": "アビスヌシザメ", "file": "batch2/1000016895.png", "note": "黒くとげだらけ、青く光るサメ", "confident": true }
+      "rare": {
+        "name": "ホネメガロドン",
+        "file": "batch2/1000016897.png",
+        "note": "骨のよろいをまとったサメ",
+        "confident": true
+      },
+      "boss": {
+        "name": "アビスヌシザメ",
+        "file": "batch2/1000016895.png",
+        "note": "黒くとげだらけ、青く光るサメ",
+        "confident": true
+      }
     },
     {
       "id": "ruins",
       "name": "階段の遺跡",
       "fish": [
-        { "rank": 1, "name": "コケスズメ",         "file": "batch1/1000016926.png", "note": "緑と茶の小魚、苔むした石のよう", "confident": true },
-        { "rank": 2, "name": "セキバンガニ",       "file": "batch1/1000016927.png", "note": "四角い甲羅に古代文字", "confident": true },
-        { "rank": 3, "name": "グルグルオウムガイ", "file": "batch1/1000016928.png", "note": "金のラインが入った渦巻きの殻", "confident": true },
-        { "rank": 4, "name": "モンヨウエイ",       "file": "batch1/1000016924.png", "note": "石灰色の平たい体、背中に古代紋章", "confident": true },
-        { "rank": 5, "name": "コダイシーラカンス", "file": "batch1/1000016925.png", "note": "青灰色の大型古代魚、厚い鱗と巨大なヒレ", "confident": true }
+        {
+          "rank": 1,
+          "name": "コケスズメ",
+          "file": "batch1/1000016926.png",
+          "note": "緑と茶の小魚、苔むした石のよう",
+          "confident": true
+        },
+        {
+          "rank": 2,
+          "name": "セキバンガニ",
+          "file": "batch1/1000016927.png",
+          "note": "四角い甲羅に古代文字",
+          "confident": true
+        },
+        {
+          "rank": 3,
+          "name": "グルグルオウムガイ",
+          "file": "batch1/1000016928.png",
+          "note": "金のラインが入った渦巻きの殻",
+          "confident": true
+        },
+        {
+          "rank": 4,
+          "name": "モンヨウエイ",
+          "file": "batch1/1000016924.png",
+          "note": "石灰色の平たい体、背中に古代紋章",
+          "confident": true
+        },
+        {
+          "rank": 5,
+          "name": "コダイシーラカンス",
+          "file": "batch1/1000016925.png",
+          "note": "青灰色の大型古代魚、厚い鱗と巨大なヒレ",
+          "confident": true
+        }
       ],
-      "rare": { "name": "オウゴンシーラカンス", "file": "batch2/1000016894.png", "note": "黄金のシーラカンス", "confident": true },
-      "boss": { "name": "ホウセキアンコウ",     "file": "batch2/1000016896.png", "note": "苔と黄金、緑の宝石ちょうちん", "confident": true }
+      "rare": {
+        "name": "オウゴンシーラカンス",
+        "file": "batch2/1000016894.png",
+        "note": "黄金のシーラカンス",
+        "confident": true
+      },
+      "boss": {
+        "name": "ホウセキアンコウ",
+        "file": "batch2/1000016896.png",
+        "note": "苔と黄金、緑の宝石ちょうちん",
+        "confident": true
+      }
     }
   ],
   "backgrounds": [
-    { "for": "満月の湾",   "file": "../backgrounds/1000016884.png", "note": "水中から見上げる満月、ピンクと青のサンゴ" },
-    { "for": "龍のたて穴", "file": "../backgrounds/1000016883.png", "note": "青い縦の谷、水晶の龍" },
-    { "for": "深海の大穴", "file": "../backgrounds/1000016882.png", "note": "暗い海底にぽっかり空いた大穴" },
-    { "for": "（v8からの原本）タイトル・結果の風景", "file": "../backgrounds/1000016625.png", "note": "月と滝の幻想的な島。いま v11 で使っている絵の原本" },
-    { "for": "（v8からの原本）海の中",             "file": "../backgrounds/1000016627.png", "note": "青い海底の谷。いま v11 で使っている絵の原本" }
+    {
+      "for": "はじまりの浅瀬",
+      "file": "../backgrounds/1000016944.png",
+      "note": "サンゴのアーチと白い砂地、光のさす浅い海"
+    },
+    {
+      "for": "天空の雲海",
+      "file": "../backgrounds/1000016943.png",
+      "note": "金色の日ざしと雲の海"
+    },
+    {
+      "for": "満月の湾",
+      "file": "../backgrounds/1000016884.png",
+      "note": "水中から見上げる満月、ピンクと青のサンゴ"
+    },
+    {
+      "for": "龍のたて穴",
+      "file": "../backgrounds/1000016883.png",
+      "note": "青い縦の谷、水晶の龍"
+    },
+    {
+      "for": "深海の大穴",
+      "file": "../backgrounds/1000016882.png",
+      "note": "暗い海底にぽっかり空いた大穴"
+    },
+    {
+      "for": "（v8からの原本）タイトル・結果の風景",
+      "file": "../backgrounds/1000016625.png",
+      "note": "月と滝の幻想的な島。いま v11 で使っている絵の原本"
+    },
+    {
+      "for": "（v8からの原本）海の中",
+      "file": "../backgrounds/1000016627.png",
+      "note": "青い海底の谷。いま v11 で使っている絵の原本"
+    }
   ],
   "missing": []
 }
