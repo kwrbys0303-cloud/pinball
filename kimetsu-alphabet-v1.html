@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0d0c0b">
+<title>アルファベット全集中 v1</title>
+<!--
+  アルファベット全集中 v1
+  ------------------------------------------------------------
+  子ども向けアルファベット暗記アプリ（和風・市松・刀モチーフ）
+  ・単一HTMLファイル / 外部依存なし / スマホ・PC両対応
+  ・画面タップ → 正解の読み方を1秒表示 → 刀で画面を真っ二つ → 次の文字
+  ・5レベル ＋ 一覧モード（愈史郎モード）
+  ・読み方は名前読み（エー・ビー・シー）
+  ・音声：Web Speech APIで英語読み上げ ＋ Web Audioで効果音（右上でON/OFF）
+  ・出題順：順番（A→Z）／ランダムをオープニングで選択
+  ・localStorage不使用（記録はメモリ内のみ）
+-->
+<style>
+:root{
+  --ink:#100e0d;
+  --paper:#f4ebd9;
+  --paper-dark:#ded1b6;
+  --gold:#c8a35a;
+  --accent:#2f7d5a;
+  --accent2:#1d5a40;
+  --checker:rgba(47,125,90,.30);
+  --glow:rgba(200,163,90,.55);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;width:100%;height:100%;}
+body{
+  height:100vh;height:100dvh;
+  overflow:hidden;
+  background:var(--ink);
+  color:var(--paper);
+  font-family:"Yu Mincho","YuMincho","Hiragino Mincho ProN","Noto Serif JP","Serif",serif;
+  -webkit-font-smoothing:antialiased;
+  user-select:none;-webkit-user-select:none;
+  touch-action:manipulation;
+}
+
+/* ===== レベル別テーマ ===== */
+body.t-taishi   {--accent:#2f7d5a;--accent2:#17402f;--checker:rgba(60,150,105,.30);--glow:rgba(120,220,170,.5);}
+body.t-hashira  {--accent:#7b4fa8;--accent2:#3a2352;--checker:rgba(150,110,200,.28);--glow:rgba(205,165,255,.5);}
+body.t-jogen    {--accent:#b0303a;--accent2:#4a1116;--checker:rgba(190,60,70,.28);--glow:rgba(255,120,120,.5);}
+body.t-yoriichi {--accent:#c8952f;--accent2:#5a3d0e;--checker:rgba(220,170,70,.26);--glow:rgba(255,220,140,.55);}
+body.t-onika    {--accent:#8c1f2b;--accent2:#2a0a0e;--checker:rgba(150,40,50,.30);--glow:rgba(255,90,90,.5);}
+body.t-yushiro  {--accent:#3a6fa8;--accent2:#16304a;--checker:rgba(80,140,200,.26);--glow:rgba(150,210,255,.5);}
+
+/* ===== 背景（市松＋和紙＋呼吸のもや） ===== */
+#bg,#bgTint{position:fixed;inset:0;pointer-events:none;}
+#bg{
+  background-color:#0d0c0b;
+  background-image:
+    radial-gradient(circle at 50% 120%, rgba(255,255,255,.05), transparent 60%),
+    conic-gradient(var(--checker) 0 25%, transparent 0 50%, var(--checker) 0 75%, transparent 0);
+  background-size:auto, 58px 58px;
+  transition:background-image .5s ease;
+}
+#bgTint{
+  background:radial-gradient(ellipse at 50% 45%, transparent 25%, rgba(0,0,0,.72) 78%);
+}
+#bgBreath{
+  position:fixed;left:50%;top:52%;width:150vmax;height:150vmax;margin:-75vmax 0 0 -75vmax;
+  pointer-events:none;opacity:.30;
+  background:radial-gradient(circle, var(--glow) 0%, transparent 46%);
+  animation:breathe 7s ease-in-out infinite;
+}
+@keyframes breathe{0%,100%{transform:scale(.72);opacity:.16;}50%{transform:scale(1);opacity:.34;}}
+
+/* ===== 画面共通 ===== */
+.screen{
+  position:fixed;inset:0;display:none;flex-direction:column;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+.screen.active{display:flex;animation:screenIn .35s ease-out;}
+@keyframes screenIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+
+/* 市松の帯（羽織のイメージ） */
+.band{
+  height:14px;flex:0 0 14px;
+  background-image:conic-gradient(var(--accent) 0 25%, #100e0d 0 50%, var(--accent) 0 75%, #100e0d 0);
+  background-size:28px 28px;
+  opacity:.85;
+}
+
+/* ===== 音トグル ===== */
+#soundBtn{
+  position:fixed;top:calc(20px + env(safe-area-inset-top));right:14px;z-index:60;
+  width:46px;height:46px;border-radius:50%;
+  border:1.5px solid rgba(244,235,217,.4);
+  background:rgba(16,14,13,.75);color:var(--paper);
+  font-size:19px;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(3px);
+}
+#soundBtn:active{transform:scale(.92);}
+#soundBtn.off{opacity:.5;}
+
+/* ===== タイトル画面 ===== */
+#screen-title{overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.title-inner{
+  flex:1;width:100%;max-width:640px;margin:0 auto;
+  padding:26px 18px 44px;
+}
+.title-main{text-align:center;margin:6px 0 4px;}
+.title-sub{
+  font-size:13px;letter-spacing:.32em;color:var(--gold);opacity:.9;margin-bottom:10px;
+}
+.title-main h1{
+  margin:0;font-size:clamp(30px,8.6vw,46px);letter-spacing:.14em;font-weight:700;
+  color:var(--paper);
+  text-shadow:0 0 20px rgba(200,163,90,.35), 0 3px 0 rgba(0,0,0,.6);
+}
+.title-rule{
+  width:120px;height:2px;margin:14px auto 6px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+}
+.title-lead{
+  text-align:center;font-size:13.5px;line-height:1.85;color:rgba(244,235,217,.78);
+  margin:0 auto 22px;max-width:460px;
+}
+.sect-label{
+  display:flex;align-items:center;gap:10px;margin:26px 4px 12px;
+  font-size:13px;letter-spacing:.22em;color:var(--gold);
+}
+.sect-label::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(200,163,90,.55),transparent);}
+
+/* 出題順の選択 */
+.order-row{display:flex;gap:10px;margin:0 0 6px;}
+.order-btn{
+  flex:1;padding:12px 8px;border-radius:8px;cursor:pointer;
+  border:1.5px solid rgba(244,235,217,.28);
+  background:rgba(244,235,217,.05);color:rgba(244,235,217,.72);
+  font-family:inherit;font-size:14px;letter-spacing:.08em;
+  transition:all .18s ease;
+}
+.order-btn .od{display:block;font-size:11px;letter-spacing:0;opacity:.6;margin-top:4px;}
+.order-btn.on{
+  border-color:var(--gold);color:var(--paper);
+  background:linear-gradient(180deg,rgba(200,163,90,.22),rgba(200,163,90,.06));
+  box-shadow:0 0 16px rgba(200,163,90,.22) inset;
+}
+
+/* レベルカード */
+.lv{
+  position:relative;display:block;width:100%;text-align:left;cursor:pointer;
+  margin:0 0 12px;padding:15px 16px 14px 20px;
+  border:1.5px solid rgba(244,235,217,.22);border-radius:9px;
+  background:linear-gradient(135deg,rgba(244,235,217,.075),rgba(244,235,217,.02));
+  color:var(--paper);font-family:inherit;
+  overflow:hidden;transition:transform .14s ease, border-color .2s ease, box-shadow .2s ease;
+}
+.lv::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--c,#2f7d5a);}
+.lv::after{
+  content:"";position:absolute;right:-30px;top:-30px;width:110px;height:110px;opacity:.13;
+  background-image:conic-gradient(var(--c,#2f7d5a) 0 25%, transparent 0 50%, var(--c,#2f7d5a) 0 75%, transparent 0);
+  background-size:22px 22px;transform:rotate(12deg);
+}
+.lv:active{transform:scale(.985);}
+.lv:hover{border-color:rgba(244,235,217,.45);box-shadow:0 0 22px rgba(0,0,0,.5);}
+.lv-head{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;position:relative;z-index:1;}
+.lv-name{font-size:19px;letter-spacing:.06em;font-weight:700;}
+.lv-rank{
+  font-size:10.5px;letter-spacing:.14em;padding:2.5px 8px;border-radius:3px;
+  background:var(--c,#2f7d5a);color:#fff;white-space:nowrap;
+}
+.lv-desc{position:relative;z-index:1;margin:8px 0 0;font-size:12.8px;line-height:1.72;color:rgba(244,235,217,.76);}
+.chips{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.chip{
+  font-size:10.5px;letter-spacing:.06em;padding:3px 8px;border-radius:20px;
+  border:1px solid rgba(244,235,217,.3);color:rgba(244,235,217,.78);
+}
+.chip.no{border-color:rgba(255,120,120,.45);color:rgba(255,160,160,.85);}
+.chip.yes{border-color:rgba(160,230,190,.5);color:rgba(180,240,205,.9);}
+.title-foot{text-align:center;font-size:11px;color:rgba(244,235,217,.4);margin-top:26px;line-height:1.9;}
+
+/* ===== プレイ画面 ===== */
+#screen-play{justify-content:flex-start;}
+.play-head{
+  flex:0 0 auto;display:flex;align-items:center;gap:12px;
+  padding:16px 70px 10px 16px;
+}
+.icon-btn{
+  width:40px;height:40px;flex:0 0 40px;border-radius:50%;
+  border:1.5px solid rgba(244,235,217,.32);background:rgba(244,235,217,.04);
+  color:var(--paper);font-size:17px;cursor:pointer;font-family:inherit;
+  display:flex;align-items:center;justify-content:center;
+}
+.icon-btn:active{transform:scale(.92);}
+.play-title{flex:1;min-width:0;}
+.play-title .pt-name{font-size:15px;letter-spacing:.1em;color:var(--paper);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.play-title .pt-mode{
+  font-size:10.5px;letter-spacing:.1em;color:rgba(244,235,217,.5);margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+/* 進捗（日輪刀ゲージ） */
+.gauge-wrap{flex:0 0 auto;padding:0 16px 4px;display:flex;align-items:center;gap:10px;}
+.gauge{
+  flex:1;height:7px;border-radius:4px;overflow:hidden;
+  background:rgba(244,235,217,.12);border:1px solid rgba(244,235,217,.16);
+}
+.gauge-fill{
+  height:100%;width:0%;border-radius:4px;
+  background:linear-gradient(90deg,var(--accent),var(--gold));
+  box-shadow:0 0 12px var(--glow);
+  transition:width .45s cubic-bezier(.3,.9,.3,1);
+}
+.gauge-num{font-size:12px;letter-spacing:.08em;color:rgba(244,235,217,.68);font-variant-numeric:tabular-nums;}
+
+/* タップ領域 */
+#tapArea{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  position:relative;padding:6px 16px 0;min-height:0;cursor:pointer;
+}
+#cardWrap{
+  position:relative;
+  width:min(88vw,440px);
+  height:min(46vh,400px);
+  min-height:210px;
+}
+.card{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255,255,255,.55), transparent 55%),
+    linear-gradient(160deg,var(--paper) 0%, var(--paper-dark) 100%);
+  border:3px solid #100e0d;border-radius:7px;
+  box-shadow:0 14px 40px rgba(0,0,0,.65), 0 0 0 1px rgba(200,163,90,.5) inset, 0 0 34px var(--glow);
+  overflow:hidden;
+}
+.card::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:
+    radial-gradient(circle at 50% 48%, transparent 41%, rgba(16,14,13,.045) 41.5%, transparent 42.4%),
+    repeating-linear-gradient(90deg, rgba(16,14,13,.022) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(0deg, rgba(16,14,13,.016) 0 1px, transparent 1px 11px);
+}
+.card::after{
+  content:"";position:absolute;inset:7px;border:1px solid rgba(16,14,13,.28);border-radius:3px;pointer-events:none;
+}
+#card.in{animation:cardIn .42s cubic-bezier(.15,.8,.3,1);}
+@keyframes cardIn{
+  0%{opacity:0;transform:translateX(26px) scale(.94) rotate(1.6deg);}
+  100%{opacity:1;transform:none;}
+}
+.glyph-row{display:flex;align-items:flex-end;justify-content:center;gap:clamp(14px,5vw,34px);position:relative;z-index:1;}
+.glyph-box{display:flex;flex-direction:column;align-items:center;}
+.glyph-lab{
+  font-size:11.5px;letter-spacing:.2em;color:rgba(16,14,13,.5);margin-bottom:4px;
+}
+.glyph{
+  font-family:"Georgia","Times New Roman","Hiragino Mincho ProN",serif;
+  font-weight:700;color:var(--ink);line-height:1;
+  font-size:clamp(74px,26vmin,178px);
+  text-shadow:2px 3px 0 rgba(16,14,13,.13);
+}
+.glyph.solo{font-size:clamp(108px,38vmin,250px);}
+/* 読み方（短冊） */
+#cardReading{
+  position:relative;z-index:1;margin-top:14px;
+  padding:6px 22px;border-radius:3px;
+  background:rgba(16,14,13,.9);color:var(--paper);
+  font-size:clamp(16px,4.6vmin,26px);letter-spacing:.16em;
+  border-left:3px solid var(--accent);border-right:3px solid var(--accent);
+  opacity:0;transform:translateY(6px) scale(.96);transition:all .28s ease;
+}
+#cardReading.show{opacity:1;transform:none;}
+
+/* ヒント */
+.hint-row{flex:0 0 auto;height:78px;display:flex;align-items:center;justify-content:center;}
+#hintBtn{
+  padding:12px 30px;border-radius:30px;cursor:pointer;font-family:inherit;
+  border:1.5px solid var(--gold);color:var(--gold);
+  background:linear-gradient(180deg,rgba(200,163,90,.16),rgba(200,163,90,.03));
+  font-size:14px;letter-spacing:.18em;
+  box-shadow:0 0 18px rgba(200,163,90,.18);
+}
+#hintBtn:active{transform:scale(.94);}
+#hintBtn.hidden{display:none;}
+.tap-guide{
+  position:absolute;bottom:6px;left:0;right:0;text-align:center;
+  font-size:11.5px;letter-spacing:.14em;color:rgba(244,235,217,.42);
+  animation:guidePulse 2.4s ease-in-out infinite;pointer-events:none;
+}
+@keyframes guidePulse{0%,100%{opacity:.35;}50%{opacity:.8;}}
+
+/* 正解の読み方（1秒表示） */
+#readout{
+  position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:10px;pointer-events:none;opacity:0;
+  background:radial-gradient(circle at 50% 50%, rgba(13,12,11,.90) 0%, rgba(13,12,11,.97) 70%);
+  backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
+  transition:opacity .16s ease;
+}
+#readout.show{opacity:1;}
+#readoutGlyph{
+  font-family:"Georgia","Times New Roman",serif;font-weight:700;
+  font-size:clamp(34px,10.5vmin,66px);color:var(--gold);letter-spacing:.14em;
+}
+#readoutKana{
+  font-size:clamp(46px,16vmin,104px);letter-spacing:.1em;color:var(--paper);
+  text-align:center;padding:0 12px;line-height:1.15;
+  text-shadow:0 0 30px var(--glow),0 0 60px var(--glow);
+}
+#readout.show #readoutKana{animation:kanaPop .4s cubic-bezier(.2,1.5,.4,1);}
+@keyframes kanaPop{0%{transform:scale(.62);opacity:0;}100%{transform:scale(1);opacity:1;}}
+#readoutMark{font-size:12px;letter-spacing:.34em;color:rgba(244,235,217,.55);}
+
+/* ===== 斬撃演出 ===== */
+.slice{position:absolute;inset:0;z-index:5;will-change:transform,opacity;}
+.slice.top{
+  clip-path:polygon(0 0,100% 0,100% 34%,0 66%);
+  animation:sliceTop .6s cubic-bezier(.22,.7,.3,1) forwards;
+}
+.slice.bottom{
+  clip-path:polygon(0 66%,100% 34%,100% 100%,0 100%);
+  animation:sliceBottom .6s cubic-bezier(.22,.7,.3,1) forwards;
+}
+@keyframes sliceTop{
+  0%{transform:none;opacity:1;}
+  14%{transform:translate(-1.5%,-2.5%) rotate(-1deg);opacity:1;}
+  60%{transform:translate(-9%,-17%) rotate(-4.5deg);opacity:.95;}
+  100%{transform:translate(-19%,-36%) rotate(-9deg);opacity:0;}
+}
+@keyframes sliceBottom{
+  0%{transform:none;opacity:1;}
+  14%{transform:translate(1.5%,2.5%) rotate(1deg);opacity:1;}
+  60%{transform:translate(9%,17%) rotate(4.5deg);opacity:.95;}
+  100%{transform:translate(19%,36%) rotate(9deg);opacity:0;}
+}
+#slashLine{
+  position:fixed;left:-30%;top:50%;width:160%;height:5px;z-index:45;pointer-events:none;
+  transform:translateY(-50%) rotate(-18deg);transform-origin:0 50%;
+  background:linear-gradient(90deg,transparent,#fff 18%,#fff 82%,transparent);
+  box-shadow:0 0 22px 6px var(--glow),0 0 60px 12px rgba(255,255,255,.35);
+  opacity:0;
+}
+#slashLine.go{animation:slashGo .34s ease-out;}
+@keyframes slashGo{
+  0%{opacity:0;transform:translateY(-50%) rotate(-18deg) scaleX(0);}
+  12%{opacity:1;}
+  55%{opacity:1;transform:translateY(-50%) rotate(-18deg) scaleX(1);}
+  100%{opacity:0;transform:translateY(-50%) rotate(-18deg) scaleX(1);}
+}
+#flash{
+  position:fixed;inset:0;z-index:44;pointer-events:none;background:#fff;opacity:0;
+}
+#flash.go{animation:flashGo .28s ease-out;}
+@keyframes flashGo{0%{opacity:.55;}100%{opacity:0;}}
+#focus{
+  position:fixed;inset:-25%;z-index:43;pointer-events:none;opacity:0;
+  background:repeating-conic-gradient(from 0deg, rgba(255,255,255,.5) 0deg .55deg, transparent .55deg 4.2deg);
+  -webkit-mask-image:radial-gradient(circle, transparent 26%, #000 64%);
+  mask-image:radial-gradient(circle, transparent 26%, #000 64%);
+}
+#focus.go{animation:focusGo .42s ease-out;}
+@keyframes focusGo{0%{opacity:0;transform:scale(1.24);}25%{opacity:.5;}100%{opacity:0;transform:scale(1);}}
+#fx{position:fixed;inset:0;z-index:46;pointer-events:none;}
+
+/* ===== クリア画面 ===== */
+#screen-clear{align-items:center;justify-content:center;text-align:center;padding:24px;}
+.clear-inner{max-width:460px;width:100%;}
+.clear-seal{
+  width:132px;height:132px;margin:0 auto 22px;border-radius:50%;
+  border:3px solid var(--gold);display:flex;align-items:center;justify-content:center;
+  font-size:34px;letter-spacing:.1em;color:var(--gold);
+  box-shadow:0 0 40px var(--glow),0 0 40px var(--glow) inset;
+  animation:sealIn .7s cubic-bezier(.2,1.4,.4,1);
+}
+@keyframes sealIn{0%{transform:scale(.3) rotate(-25deg);opacity:0;}100%{transform:none;opacity:1;}}
+.clear-inner h2{margin:0 0 6px;font-size:clamp(26px,7.6vw,38px);letter-spacing:.2em;}
+.clear-lv{font-size:13px;letter-spacing:.16em;color:var(--gold);margin-bottom:16px;}
+.clear-msg{font-size:14px;line-height:1.95;color:rgba(244,235,217,.8);margin:0 0 30px;}
+.btn-col{display:flex;flex-direction:column;gap:11px;}
+.btn{
+  padding:15px 20px;border-radius:8px;cursor:pointer;font-family:inherit;
+  font-size:15px;letter-spacing:.14em;
+  border:1.5px solid var(--gold);color:var(--ink);
+  background:linear-gradient(180deg,var(--gold),#a8842f);
+  box-shadow:0 0 22px rgba(200,163,90,.25);
+}
+.btn.ghost{background:rgba(244,235,217,.05);color:var(--paper);border-color:rgba(244,235,217,.35);box-shadow:none;}
+.btn:active{transform:scale(.97);}
+
+/* ===== 一覧（愈史郎モード） ===== */
+#screen-list{overflow:hidden;}
+.list-head{flex:0 0 auto;display:flex;align-items:center;gap:12px;padding:16px 70px 6px 16px;}
+.tabs{flex:0 0 auto;display:flex;gap:8px;padding:8px 16px 12px;}
+.tab{
+  flex:1;padding:11px 6px;border-radius:7px;cursor:pointer;font-family:inherit;
+  border:1.5px solid rgba(244,235,217,.26);background:rgba(244,235,217,.04);
+  color:rgba(244,235,217,.7);font-size:13.5px;letter-spacing:.1em;
+}
+.tab.on{border-color:var(--gold);color:var(--paper);background:linear-gradient(180deg,rgba(200,163,90,.22),rgba(200,163,90,.05));}
+#listGrid{
+  flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  display:grid;gap:9px;padding:2px 16px 30px;
+  grid-template-columns:repeat(auto-fill,minmax(72px,1fr));
+  align-content:start;
+}
+.cell{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  padding:11px 4px 9px;border-radius:6px;cursor:pointer;
+  background:linear-gradient(160deg,var(--paper),var(--paper-dark));
+  border:2px solid #100e0d;color:var(--ink);
+  box-shadow:0 4px 12px rgba(0,0,0,.45);
+  transition:transform .12s ease, box-shadow .2s ease;
+}
+.cell:active,.cell.hit{transform:scale(.94);box-shadow:0 0 20px var(--glow),0 0 0 2px var(--gold);}
+.cell-glyph{font-family:"Georgia","Times New Roman",serif;font-weight:700;font-size:clamp(22px,6.4vw,32px);line-height:1.15;}
+.cell-kana{font-size:11px;letter-spacing:.06em;color:rgba(16,14,13,.68);margin-top:3px;}
+.list-note{flex:0 0 auto;text-align:center;font-size:11px;color:rgba(244,235,217,.45);padding:0 16px 8px;}
+
+/* ===== 大画面（PC）調整 ===== */
+@media (min-width:820px) and (min-height:620px){
+  .hint-row{height:96px;}
+  .tap-guide{bottom:14px;font-size:12.5px;}
+  #cardWrap{width:min(56vw,520px);height:min(56vh,500px);}
+  .play-head,.list-head{padding-left:26px;}
+  .gauge-wrap{padding-left:26px;padding-right:26px;}
+}
+/* ===== 横向きスマホ ===== */
+@media (max-height:520px) and (orientation:landscape){
+  #cardWrap{width:min(60vw,420px);height:min(62vh,300px);min-height:150px;}
+  .hint-row{height:60px;}
+  .tap-guide{display:none;}
+  .play-head{padding-top:6px;padding-bottom:2px;}
+  .band{height:9px;flex-basis:9px;}
+  .glyph{font-size:clamp(52px,19vh,124px);}
+  .glyph.solo{font-size:clamp(70px,30vh,168px);}
+  #cardReading{margin-top:10px;padding:4px 16px;}
+}
+@media (prefers-reduced-motion:reduce){
+  #bgBreath,.tap-guide{animation:none;}
+}
+</style>
+</head>
+<body class="t-taishi">
+
+<div id="bg"></div>
+<div id="bgBreath"></div>
+<div id="bgTint"></div>
+
+<button id="soundBtn" type="button" aria-label="音のオン・オフ">♪</button>
+
+<!-- ================= オープニング ================= -->
+<section id="screen-title" class="screen active">
+  <div class="title-inner">
+    <div class="title-main">
+      <div class="title-sub">ぜんしゅうちゅう</div>
+      <h1>アルファベット<br>全集中</h1>
+      <div class="title-rule"></div>
+    </div>
+    <p class="title-lead">
+      画面をタップすると、正解の読み方がひらめいたあと、<br>
+      刀の一閃で画面を斬り、次の文字があらわれる。<br>
+      全26文字を斬り抜けて、任務を完了せよ。
+    </p>
+
+    <div class="sect-label">出題の順番</div>
+    <div class="order-row">
+      <button class="order-btn on" type="button" data-order="seq">順番<span class="od">A → Z のじゅんばん</span></button>
+      <button class="order-btn" type="button" data-order="rand">ランダム<span class="od">バラバラに出てくる</span></button>
+    </div>
+
+    <div class="sect-label">階級をえらぶ</div>
+    <div id="levelList"></div>
+
+    <div class="sect-label">べつのモード</div>
+    <button class="lv" type="button" data-level="yushiro" style="--c:#3a6fa8">
+      <div class="lv-head">
+        <span class="lv-name">愈史郎モード</span>
+        <span class="lv-rank">一覧</span>
+      </div>
+      <p class="lv-desc">アルファベット26文字をまとめて見られる図録。大文字だけ／小文字だけ／両方の3つに切りかえられて、文字をタップすると読み方を発音してくれる。おぼえる前の下見や、答え合わせに。</p>
+      <div class="chips">
+        <span class="chip">大文字</span><span class="chip">小文字</span><span class="chip">両方</span><span class="chip yes">読み方つき</span>
+      </div>
+    </button>
+
+    <p class="title-foot">
+      ※このアプリは『鬼滅の刃』の雰囲気にインスパイアされた、<br>子どものための非公式な学習アプリです。
+    </p>
+  </div>
+</section>
+
+<!-- ================= プレイ ================= -->
+<section id="screen-play" class="screen">
+  <div class="band"></div>
+  <div class="play-head">
+    <button class="icon-btn" type="button" id="backFromPlay" aria-label="もどる">✕</button>
+    <div class="play-title">
+      <div class="pt-name" id="playLevelName">鬼殺隊員レベル</div>
+      <div class="pt-mode" id="playModeName">順番／大文字・小文字・読み方</div>
+    </div>
+  </div>
+  <div class="gauge-wrap">
+    <div class="gauge"><div class="gauge-fill" id="gaugeFill"></div></div>
+    <div class="gauge-num" id="gaugeNum">1 / 26</div>
+  </div>
+
+  <div id="tapArea">
+    <div id="cardWrap">
+      <div class="card" id="card">
+        <div class="glyph-row" id="glyphRow"></div>
+        <div id="cardReading"></div>
+      </div>
+    </div>
+    <div class="tap-guide" id="tapGuide">画面をタップで斬る</div>
+  </div>
+
+  <div class="hint-row">
+    <button id="hintBtn" type="button">ヒント</button>
+  </div>
+  <div class="band"></div>
+</section>
+
+<!-- ================= 一覧（愈史郎モード） ================= -->
+<section id="screen-list" class="screen">
+  <div class="band"></div>
+  <div class="list-head">
+    <button class="icon-btn" type="button" id="backFromList" aria-label="もどる">✕</button>
+    <div class="play-title">
+      <div class="pt-name">愈史郎モード</div>
+      <div class="pt-mode">アルファベット一覧・タップで発音</div>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab on" type="button" data-view="both">両方</button>
+    <button class="tab" type="button" data-view="upper">大文字</button>
+    <button class="tab" type="button" data-view="lower">小文字</button>
+  </div>
+  <div id="listGrid"></div>
+  <div class="list-note">文字をタップすると読み上げます</div>
+  <div class="band"></div>
+</section>
+
+<!-- ================= クリア ================= -->
+<section id="screen-clear" class="screen">
+  <div class="clear-inner">
+    <div class="clear-seal" id="clearSeal">完</div>
+    <h2>任務完了</h2>
+    <div class="clear-lv" id="clearLv">鬼殺隊員レベル ／ 全26文字</div>
+    <p class="clear-msg" id="clearMsg">見事な太刀筋だった。</p>
+    <div class="btn-col">
+      <button class="btn" type="button" id="againBtn">もう一度 この階級で</button>
+      <button class="btn ghost" type="button" id="toListBtn">一覧を見る（愈史郎モード）</button>
+      <button class="btn ghost" type="button" id="toTitleBtn">はじめの画面へ</button>
+    </div>
+  </div>
+</section>
+
+<div id="readout">
+  <div id="readoutGlyph"></div>
+  <div id="readoutKana"></div>
+  <div id="readoutMark">こたえ</div>
+</div>
+<div id="focus"></div>
+<div id="flash"></div>
+<div id="slashLine"></div>
+<canvas id="fx"></canvas>
+
+<script>
+(function(){
+'use strict';
+
+/* =========================================================
+   データ
+   ========================================================= */
+// [大文字, 小文字, カタカナ読み（名前読み）]
+var LETTERS = [
+  ['A','a','エー'],   ['B','b','ビー'],   ['C','c','シー'],   ['D','d','ディー'],
+  ['E','e','イー'],   ['F','f','エフ'],   ['G','g','ジー'],   ['H','h','エイチ'],
+  ['I','i','アイ'],   ['J','j','ジェー'], ['K','k','ケー'],   ['L','l','エル'],
+  ['M','m','エム'],   ['N','n','エヌ'],   ['O','o','オー'],   ['P','p','ピー'],
+  ['Q','q','キュー'], ['R','r','アール'], ['S','s','エス'],   ['T','t','ティー'],
+  ['U','u','ユー'],   ['V','v','ヴィー'], ['W','w','ダブリュー'],['X','x','エックス'],
+  ['Y','y','ワイ'],   ['Z','z','ゼット']
+];
+
+var LEVELS = [
+  {
+    key:'taishi', name:'鬼殺隊員レベル', rank:'入門', color:'#3c9669', theme:'t-taishi',
+    upper:true, lower:true, reading:true, hint:false,
+    desc:'大文字・小文字・読み方（カタカナ）を全部見せてくれる、いちばんやさしい階級。まずはここから、文字の形と音をむすびつける稽古を。',
+    seal:'甲', msg:'よく最後までやり抜いた。<br>文字の形と音が、体にしみこんでいく。'
+  },
+  {
+    key:'hashira', name:'柱レベル', rank:'中級', color:'#9a6ac9', theme:'t-hashira',
+    upper:true, lower:true, reading:false, hint:true,
+    desc:'大文字と小文字だけが出てくる。読み方は自分で思い出す。わからなくなったら「ヒント」を押せばカタカナの読み方があらわれる。',
+    seal:'柱', msg:'柱の名にふさわしい集中だった。<br>読み方が、頭の中で鳴っている。'
+  },
+  {
+    key:'jogen', name:'上弦の鬼レベル', rank:'上級', color:'#c94a55', theme:'t-jogen',
+    upper:false, lower:true, reading:false, hint:true,
+    desc:'小文字だけが出てくる、まぎらわしい形との戦い。b と d、p と q を見分けられるか。「ヒント」で読み方を確認できる。',
+    seal:'弦', msg:'まぎらわしい小文字を、よく見切った。<br>その眼は、もう鬼をとらえている。'
+  },
+  {
+    key:'yoriichi', name:'縁壱レベル', rank:'皆伝', color:'#dcae4b', theme:'t-yoriichi',
+    upper:true, lower:true, reading:false, hint:false,
+    desc:'大文字と小文字が出てくるが、ヒントボタンは無い。自分の記憶だけをたよりに26文字を斬り抜ける、真剣勝負の型。',
+    seal:'壱', msg:'ヒント無しで26文字。<br>始まりの呼吸に、たしかに届いている。'
+  },
+  {
+    key:'onika', name:'鬼化炭治郎レベル', rank:'最難関', color:'#a82634', theme:'t-onika',
+    upper:false, lower:true, reading:false, hint:false,
+    desc:'小文字だけ、しかもヒント無し。このアプリでいちばん難しい最終試練。ここを斬り抜けたら、アルファベットはもう体の一部。',
+    seal:'鬼', msg:'最終試練を、ヒント無しで踏破。<br>おぬし、もはやアルファベットの化身。'
+  }
+];
+var LEVEL_MAP = {};
+for(var li=0; li<LEVELS.length; li++){ LEVEL_MAP[LEVELS[li].key] = LEVELS[li]; }
+
+/* =========================================================
+   ユーティリティ
+   ========================================================= */
+function $(id){ return document.getElementById(id); }
+function shuffle(a){
+  for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; }
+  return a;
+}
+function restart(el, cls){ el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+// 複製したカードからid属性を取りのぞく（id重複ふせぎ）
+function stripIds(node){
+  if(node.removeAttribute) node.removeAttribute('id');
+  var kids = node.querySelectorAll ? node.querySelectorAll('[id]') : [];
+  for(var i=0;i<kids.length;i++){ kids[i].removeAttribute('id'); }
+  return node;
+}
+
+/* =========================================================
+   音まわり（効果音＝Web Audio／読み上げ＝Web Speech）
+   ========================================================= */
+var Sound = {
+  on:true, ctx:null, ready:false,
+  init:function(){
+    if(this.ctx) { if(this.ctx.state==='suspended'){ this.ctx.resume(); } return; }
+    try{
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return;
+      this.ctx = new AC();
+      this.ready = true;
+    }catch(e){ this.ctx=null; }
+  },
+  now:function(){ return this.ctx ? this.ctx.currentTime : 0; },
+  gainTo:function(dest){ return dest || (this.ctx ? this.ctx.destination : null); },
+  // 斬撃音：ノイズをバンドパスで高→低にスイープ
+  slash:function(){
+    if(!this.on || !this.ctx) return;
+    var ctx=this.ctx, t=ctx.currentTime, dur=0.34;
+    var len=Math.floor(ctx.sampleRate*dur);
+    var buf=ctx.createBuffer(1,len,ctx.sampleRate);
+    var d=buf.getChannelData(0);
+    for(var i=0;i<len;i++){ d[i]=(Math.random()*2-1)*(1-i/len); }
+    var src=ctx.createBufferSource(); src.buffer=buf;
+    var bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.Q.value=1.4;
+    bp.frequency.setValueAtTime(5200,t);
+    bp.frequency.exponentialRampToValueAtTime(420,t+dur);
+    var g=ctx.createGain();
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(0.34,t+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    src.connect(bp); bp.connect(g); g.connect(ctx.destination);
+    src.start(t); src.stop(t+dur+0.02);
+    this.drum(0.05);
+  },
+  // 和太鼓っぽい低音
+  drum:function(delay){
+    if(!this.on || !this.ctx) return;
+    var ctx=this.ctx, t=ctx.currentTime+(delay||0);
+    var o=ctx.createOscillator(); o.type='sine';
+    o.frequency.setValueAtTime(150,t);
+    o.frequency.exponentialRampToValueAtTime(46,t+0.26);
+    var g=ctx.createGain();
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(0.5,t+0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.3);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(t); o.stop(t+0.32);
+  },
+  // 正解のきらめき
+  chime:function(){
+    if(!this.on || !this.ctx) return;
+    var ctx=this.ctx, t=ctx.currentTime;
+    var freqs=[783.99,1174.66];
+    for(var i=0;i<freqs.length;i++){
+      var o=ctx.createOscillator(); o.type='triangle';
+      o.frequency.value=freqs[i];
+      var g=ctx.createGain();
+      var st=t+i*0.075;
+      g.gain.setValueAtTime(0.0001,st);
+      g.gain.exponentialRampToValueAtTime(0.16,st+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,st+0.45);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(st); o.stop(st+0.5);
+    }
+  },
+  // 小さめのタップ音
+  tick:function(){
+    if(!this.on || !this.ctx) return;
+    var ctx=this.ctx, t=ctx.currentTime;
+    var o=ctx.createOscillator(); o.type='square'; o.frequency.value=880;
+    var g=ctx.createGain();
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(0.08,t+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.12);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(t); o.stop(t+0.14);
+  },
+  // 任務完了のファンファーレ
+  fanfare:function(){
+    if(!this.on || !this.ctx) return;
+    var ctx=this.ctx, t=ctx.currentTime;
+    var seq=[523.25,659.25,783.99,1046.5];
+    for(var i=0;i<seq.length;i++){
+      var o=ctx.createOscillator(); o.type='triangle'; o.frequency.value=seq[i];
+      var g=ctx.createGain();
+      var st=t+i*0.13;
+      g.gain.setValueAtTime(0.0001,st);
+      g.gain.exponentialRampToValueAtTime(0.18,st+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,st+0.55);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(st); o.stop(st+0.6);
+    }
+    this.drum(0.02);
+  }
+};
+
+var speechOK = ('speechSynthesis' in window) && ('SpeechSynthesisUtterance' in window);
+function speak(letter){
+  if(!Sound.on || !speechOK) return;
+  try{
+    window.speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(letter);
+    u.lang = 'en-US';
+    u.rate = 0.75;
+    u.pitch = 1.05;
+    u.volume = 1;
+    window.speechSynthesis.speak(u);
+  }catch(e){ /* 読み上げ非対応環境では無視 */ }
+}
+
+/* =========================================================
+   エフェクト用キャンバス（火花・衝撃波）
+   ========================================================= */
+var fx = $('fx');
+var fxc = fx.getContext('2d');
+var sparks = [], rings = [];
+var dpr = 1;
+
+function resizeFx(){
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  fx.width  = Math.floor(window.innerWidth  * dpr);
+  fx.height = Math.floor(window.innerHeight * dpr);
+  fx.style.width  = window.innerWidth + 'px';
+  fx.style.height = window.innerHeight + 'px';
+  fxc.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener('resize', resizeFx);
+window.addEventListener('orientationchange', function(){ setTimeout(resizeFx,120); });
+resizeFx();
+
+function burst(rect){
+  // 斬撃ライン（-18度）に沿って火花を散らす
+  var cx = rect.left + rect.width/2;
+  var cy = rect.top  + rect.height/2;
+  var ang = -18 * Math.PI/180;
+  var half = rect.width * 0.62;
+  var n = 46;
+  for(var i=0;i<n;i++){
+    var t = (Math.random()*2-1);
+    var px = cx + Math.cos(ang)*half*t;
+    var py = cy + Math.sin(ang)*half*t;
+    var dir = ang + (Math.random()<0.5 ? Math.PI/2 : -Math.PI/2) + (Math.random()-0.5)*1.3;
+    var sp = 2.2 + Math.random()*7.5;
+    sparks.push({
+      x:px, y:py,
+      vx:Math.cos(dir)*sp + Math.cos(ang)*3.4,
+      vy:Math.sin(dir)*sp,
+      life:1, decay:0.016+Math.random()*0.022,
+      size:1.1+Math.random()*2.6,
+      hot:Math.random()<0.42
+    });
+  }
+  rings.push({x:cx, y:cy, r:rect.width*0.16, life:1, decay:0.045});
+}
+
+function fxLoop(ts){
+  requestAnimationFrame(fxLoop);
+  var now = ts || 0;
+  var dt = (now - fxLoop.last) || 16.67;
+  fxLoop.last = now;
+  if(dt > 60) dt = 60;
+  var k = dt / 16.67; // デルタタイム正規化（60FPS基準）
+
+  fxc.clearRect(0,0,window.innerWidth,window.innerHeight);
+  if(!sparks.length && !rings.length) return;
+
+  var glow = getComputedStyle(document.body).getPropertyValue('--gold').trim() || '#c8a35a';
+  var i;
+  for(i=sparks.length-1;i>=0;i--){
+    var s = sparks[i];
+    s.x += s.vx * k;
+    s.y += s.vy * k;
+    s.vy += 0.19 * k;
+    s.vx *= Math.pow(0.985, k);
+    s.life -= s.decay * k;
+    if(s.life <= 0){ sparks.splice(i,1); continue; }
+    fxc.globalAlpha = Math.max(s.life,0);
+    fxc.fillStyle = s.hot ? '#ffffff' : glow;
+    fxc.beginPath();
+    fxc.arc(s.x, s.y, s.size*(0.4+s.life*0.8), 0, Math.PI*2);
+    fxc.fill();
+  }
+  for(i=rings.length-1;i>=0;i--){
+    var r = rings[i];
+    r.r += 9.5 * k;
+    r.life -= r.decay * k;
+    if(r.life <= 0){ rings.splice(i,1); continue; }
+    fxc.globalAlpha = Math.max(r.life,0) * 0.6;
+    fxc.strokeStyle = '#ffffff';
+    fxc.lineWidth = 2.5 * r.life;
+    fxc.beginPath();
+    fxc.arc(r.x, r.y, r.r, 0, Math.PI*2);
+    fxc.stroke();
+  }
+  fxc.globalAlpha = 1;
+}
+fxLoop.last = 0;
+requestAnimationFrame(fxLoop);
+
+/* =========================================================
+   画面切りかえ
+   ========================================================= */
+var screens = ['screen-title','screen-play','screen-list','screen-clear'];
+var current = 'screen-title';
+function showScreen(id){
+  for(var i=0;i<screens.length;i++){
+    var el = $(screens[i]);
+    if(el) el.classList.toggle('active', screens[i]===id);
+  }
+  current = id;
+}
+function setTheme(theme){
+  document.body.className = theme;
+}
+
+/* =========================================================
+   オープニング（レベル一覧の生成）
+   ========================================================= */
+var order = 'seq';
+
+function buildTitle(){
+  var wrap = $('levelList');
+  var html = '';
+  for(var i=0;i<LEVELS.length;i++){
+    var L = LEVELS[i];
+    var chips = '';
+    chips += L.upper ? '<span class="chip">大文字</span>' : '';
+    chips += L.lower ? '<span class="chip">小文字</span>' : '';
+    if(L.reading){ chips += '<span class="chip yes">読み方つき</span>'; }
+    else { chips += L.hint ? '<span class="chip yes">ヒントあり</span>' : '<span class="chip no">ヒント無し</span>'; }
+    html += '<button class="lv" type="button" data-level="'+L.key+'" style="--c:'+L.color+'">'
+          +   '<div class="lv-head"><span class="lv-name">'+L.name+'</span>'
+          +   '<span class="lv-rank">'+L.rank+'</span></div>'
+          +   '<p class="lv-desc">'+L.desc+'</p>'
+          +   '<div class="chips">'+chips+'</div>'
+          + '</button>';
+  }
+  wrap.innerHTML = html;
+}
+buildTitle();
+
+document.addEventListener('click', function(e){
+  var ob = e.target.closest ? e.target.closest('.order-btn') : null;
+  if(ob){
+    order = ob.getAttribute('data-order');
+    var btns = document.querySelectorAll('.order-btn');
+    for(var i=0;i<btns.length;i++){ btns[i].classList.toggle('on', btns[i]===ob); }
+    Sound.init(); Sound.tick();
+    return;
+  }
+  var lv = e.target.closest ? e.target.closest('.lv') : null;
+  if(lv){
+    Sound.init();
+    var key = lv.getAttribute('data-level');
+    if(key === 'yushiro'){ openList(); }
+    else { startLevel(key); }
+  }
+}, false);
+
+/* =========================================================
+   プレイ本体
+   ========================================================= */
+var level = null, queue = [], idx = 0, cur = null, state = 'idle', gen = 0;
+
+var cardWrap = $('cardWrap');
+var card     = $('card');
+var glyphRow = $('glyphRow');
+var cardReading = $('cardReading');
+var hintBtn  = $('hintBtn');
+var readout  = $('readout');
+
+function startLevel(key){
+  level = LEVEL_MAP[key];
+  if(!level) return;
+  setTheme(level.theme);
+  queue = LETTERS.slice();
+  if(order === 'rand') shuffle(queue);
+  idx = 0;
+  state = 'idle';
+  gen++;
+  $('playLevelName').textContent = level.name;
+  var parts = [];
+  parts.push(order === 'rand' ? 'ランダム' : '順番');
+  parts.push((level.upper && level.lower) ? '大文字・小文字' : (level.lower ? '小文字のみ' : '大文字のみ'));
+  if(level.reading){ parts.push('読み方つき'); }
+  else { parts.push(level.hint ? 'ヒントあり' : 'ヒント無し'); }
+  $('playModeName').textContent = parts.join('／');
+  hintBtn.classList.toggle('hidden', !level.hint);
+  showScreen('screen-play');
+  renderCard();
+  restart(card,'in');
+}
+
+function renderCard(){
+  cur = queue[idx];
+  var html = '';
+  if(level.upper){
+    html += '<div class="glyph-box"><span class="glyph-lab">大文字</span>'
+         +  '<span class="glyph'+(level.lower?'':' solo')+'">'+cur[0]+'</span></div>';
+  }
+  if(level.lower){
+    html += '<div class="glyph-box"><span class="glyph-lab">小文字</span>'
+         +  '<span class="glyph'+(level.upper?'':' solo')+'">'+cur[1]+'</span></div>';
+  }
+  glyphRow.innerHTML = html;
+  cardReading.textContent = cur[2];
+  cardReading.classList.toggle('show', !!level.reading);
+  var pct = ((idx) / queue.length) * 100;
+  $('gaugeFill').style.width = pct + '%';
+  $('gaugeNum').textContent = (idx+1) + ' / ' + queue.length;
+  $('tapGuide').textContent = (idx===0) ? '画面をタップで斬る' : '';
+}
+
+function showHint(){
+  if(state !== 'idle' || !level || !level.hint) return;
+  cardReading.classList.add('show');
+  Sound.init(); Sound.tick();
+  speak(cur[0]);
+}
+
+function advance(){
+  if(state !== 'idle' || !level) return;
+  state = 'reveal';
+  var myGen = gen;
+  Sound.init();
+  // 1) 正解の読み方を1秒だけ表示
+  $('readoutGlyph').textContent = level.upper && level.lower ? (cur[0] + '  ' + cur[1])
+                                 : (level.lower ? cur[1] : cur[0]);
+  $('readoutKana').textContent = cur[2];
+  readout.classList.add('show');
+  Sound.chime();
+  speak(cur[0]);
+  setTimeout(function(){
+    if(myGen !== gen) return;
+    readout.classList.remove('show');
+    doSlash();
+  }, 1000);
+}
+
+function doSlash(){
+  state = 'slash';
+  var myGen = gen;
+  Sound.slash();
+  // 斬撃ラインをカードの中心にそろえる
+  var cr = cardWrap.getBoundingClientRect();
+  $('slashLine').style.top = (cr.top + cr.height/2) + 'px';
+  restart($('slashLine'),'go');
+  restart($('flash'),'go');
+  restart($('focus'),'go');
+
+  setTimeout(function(){
+    if(myGen !== gen) return;
+    // カードを上下2枚に分割して斬り飛ばす
+    var top = stripIds(card.cloneNode(true));
+    var bot = stripIds(card.cloneNode(true));
+    top.className = 'card slice top';
+    bot.className = 'card slice bottom';
+    cardWrap.appendChild(top);
+    cardWrap.appendChild(bot);
+    card.style.visibility = 'hidden';
+    burst(cardWrap.getBoundingClientRect());
+
+    setTimeout(function(){
+      if(top.parentNode) top.parentNode.removeChild(top);
+      if(bot.parentNode) bot.parentNode.removeChild(bot);
+      if(myGen !== gen) return;
+      idx++;
+      if(idx >= queue.length){
+        card.style.visibility = '';
+        finish();
+        return;
+      }
+      renderCard();
+      card.style.visibility = '';
+      restart(card,'in');
+      state = 'idle';
+    }, 600);
+  }, 130);
+}
+
+function finish(){
+  $('gaugeFill').style.width = '100%';
+  $('gaugeNum').textContent = queue.length + ' / ' + queue.length;
+  $('clearSeal').textContent = level.seal;
+  $('clearLv').textContent = level.name + ' ／ 全' + queue.length + '文字 ／ ' + (order==='rand'?'ランダム':'順番');
+  $('clearMsg').innerHTML = level.msg;
+  showScreen('screen-clear');
+  Sound.fanfare();
+  state = 'idle';
+}
+
+/* =========================================================
+   一覧モード（愈史郎モード）
+   ========================================================= */
+var listView = 'both';
+function openList(){
+  setTheme('t-yushiro');
+  renderList();
+  showScreen('screen-list');
+}
+function renderList(){
+  var g = $('listGrid');
+  var html = '';
+  for(var i=0;i<LETTERS.length;i++){
+    var L = LETTERS[i];
+    var glyph;
+    if(listView === 'upper')      glyph = L[0];
+    else if(listView === 'lower') glyph = L[1];
+    else                          glyph = L[0] + '<span style="opacity:.55"> </span>' + L[1];
+    html += '<div class="cell" data-i="'+i+'">'
+         +   '<div class="cell-glyph">'+glyph+'</div>'
+         +   '<div class="cell-kana">'+L[2]+'</div>'
+         + '</div>';
+  }
+  g.innerHTML = html;
+}
+$('listGrid').addEventListener('click', function(e){
+  var cell = e.target.closest ? e.target.closest('.cell') : null;
+  if(!cell) return;
+  var L = LETTERS[parseInt(cell.getAttribute('data-i'),10)];
+  Sound.init(); Sound.tick();
+  speak(L[0]);
+  cell.classList.add('hit');
+  setTimeout(function(){ cell.classList.remove('hit'); }, 220);
+});
+var tabs = document.querySelectorAll('.tab');
+for(var ti=0; ti<tabs.length; ti++){
+  tabs[ti].addEventListener('click', function(){
+    listView = this.getAttribute('data-view');
+    for(var k=0;k<tabs.length;k++){ tabs[k].classList.toggle('on', tabs[k]===this); }
+    Sound.init(); Sound.tick();
+    renderList();
+  });
+}
+
+/* =========================================================
+   入力（タップ・クリック・キーボード）
+   ========================================================= */
+// プレイ画面はどこをタップしても進む（ボタン類の上を除く）
+$('screen-play').addEventListener('pointerdown', function(e){
+  if(e.target.closest && e.target.closest('button')) return;
+  e.preventDefault();
+  advance();
+});
+hintBtn.addEventListener('click', function(e){ e.stopPropagation(); showHint(); });
+
+$('backFromPlay').addEventListener('click', function(){ goTitle(); });
+$('backFromList').addEventListener('click', function(){ goTitle(); });
+$('againBtn').addEventListener('click',  function(){ Sound.init(); startLevel(level.key); });
+$('toListBtn').addEventListener('click', function(){ Sound.init(); openList(); });
+$('toTitleBtn').addEventListener('click',function(){ goTitle(); });
+
+function goTitle(){
+  gen++;
+  state = 'idle';
+  readout.classList.remove('show');
+  if(speechOK){ try{ window.speechSynthesis.cancel(); }catch(e){} }
+  setTheme('t-taishi');
+  showScreen('screen-title');
+}
+
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape'){ if(current!=='screen-title') goTitle(); return; }
+  if(current !== 'screen-play') return;
+  if(e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); advance(); }
+  else if(e.key === 'h' || e.key === 'H'){ e.preventDefault(); showHint(); }
+});
+
+/* 音のON/OFF */
+var soundBtn = $('soundBtn');
+soundBtn.addEventListener('click', function(e){
+  e.stopPropagation();
+  Sound.on = !Sound.on;
+  soundBtn.classList.toggle('off', !Sound.on);
+  soundBtn.textContent = Sound.on ? '♪' : '✕';
+  soundBtn.setAttribute('aria-label', Sound.on ? '音をオフにする' : '音をオンにする');
+  if(Sound.on){ Sound.init(); Sound.tick(); }
+  else if(speechOK){ try{ window.speechSynthesis.cancel(); }catch(err){} }
+});
+
+/* 初回のユーザー操作で音声を起こす（モバイル対策） */
+function unlockAudio(){
+  Sound.init();
+  document.removeEventListener('pointerdown', unlockAudio);
+  document.removeEventListener('keydown', unlockAudio);
+}
+document.addEventListener('pointerdown', unlockAudio);
+document.addEventListener('keydown', unlockAudio);
+
+/* iOSのダブルタップズーム抑制 */
+document.addEventListener('dblclick', function(e){ e.preventDefault(); }, {passive:false});
+
+})();
+</script>
+</body>
+</html>
