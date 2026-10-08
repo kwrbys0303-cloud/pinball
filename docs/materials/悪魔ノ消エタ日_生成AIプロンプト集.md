@@ -25,13 +25,15 @@ Chord progression (one chord per bar): C | C | Am | Am | F | F | G7 | G7 | Am | 
 ```
 ウクレレ：1拍目と3拍目に「ジャン、ジャン」と短く切って弾く。
 
-### 場面2　ひとりの剣士（さびしさ＋戦いの予兆）
-コード進行（各2小節・72BPM）：Am｜Am｜F｜F｜C｜C｜G7｜G7｜×2（2回目で緊張が高まる）
+### 場面2　戦いの幕開け（10月8日 差し替え）
+コード進行（各1小節・112BPM）：Am｜F｜C｜G7｜を最初から最後までくり返す。最初の4小節（約9秒）は静か、5小節目の太鼓の一発から戦いモード。
 ```
-A lonely swordsman alone on a windswept hill at the edge of a kingdom. Melancholic and quiet at first, then a growing sense that a battle is about to begin. Solo wooden flute, soft cello, gentle wind ambience. In the second half, add a low drum like a heartbeat and tremolo strings that slowly grow in tension. 72 BPM, 4/4.
-Chord progression (each chord held for two bars): Am | Am | F | F | C | C | G7 | G7 | — play twice; the second time builds tension and ends on G7.
+The opening of a battle in a fantasy story. It starts quiet and tense for the first 4 bars (about 9 seconds): soft low sustained strings and a quiet timpani roll. At bar 5, a big drum hit marks the moment the soldiers charge in, and the music switches into battle mode: driving staccato string ostinato, bold brass stabs, snare drum and deep war drums. Exciting and adventurous, with a slightly playful, comedic edge (this is a fun battle, not a scary one). Keep building energy toward the end and finish with a strong final hit on G7.
+112 BPM, 4/4.
+Chord progression (exactly one chord per bar, the same 4-bar pattern from start to finish): Am | F | C | G7 | Am | F | C | G7 | ... repeat.
+Instrumental only, no vocals. Key of A minor / C major. Use ONLY these four chords: Am, F, C, G7 — no other chords. Each chord lasts exactly one full bar (4 beats). Steady tempo, clear downbeat, no tempo or key changes. No bongos or congas (live bongo will be added). Leave space for spoken dialogue and a live ukulele group playing along. About 60 seconds.
 ```
-ウクレレ：1小節に1回ゆっくりかき下ろして響かせる。後半は語り部4人が少しずつ回数を増やす。
+ウクレレ：最初の4小節は1小節に1回そっと。5小節目で大塚のボンゴ「ドン！」を音源の太鼓に重ね、家来たちが駆けこむ。そのあとはダウン・アップ（セリフの間は1拍目だけ）。最後のG7の一発を「はじめ！」の直前に合わせる。
 
 ### 場面3　戦い（テンポよく・うきうきするコミカルな戦い）
 コード進行（各1小節・132BPM）：Am｜F｜G7｜C｜×2 → F｜G7｜Am｜Am｜→ くり返し
