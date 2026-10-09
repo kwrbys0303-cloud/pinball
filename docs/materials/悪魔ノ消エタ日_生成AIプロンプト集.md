@@ -99,3 +99,34 @@ Sunrise. A winding country road leads from the hill across green fields toward a
 - 音源：指定外のコードが混ざることがある。ウクレレで C・Am・F・G7 を合わせて確かめ、ずれたら作り直すか、その部分を使わない。
 - 画像：場面2〜4は同じ丘。場面2を先に作り、それを参考画像にして天気・時間帯だけ変えると場所がつながる。
 - 画像のNG指定欄があれば：people, person, character, face, text, watermark, blood
+
+---
+
+## 【10月9日 追加】ウクレレが目立つBGM版（場面1・場面4）
+セリフはマイクで言い、ウクレレ隊はBGMの上でずっと弾き続ける前提。場面2（戦いの幕開け）・場面3（戦い）は前の版のままでよい。
+
+### 共通の一文（場面1・4の後ろにつける）
+```
+This is a backing track for a live ukulele group (about 6 to 11 ukuleles) who will strum along the whole time, while actors speak lines into microphones. Make the ukulele group the star:
+- Do NOT use guitar, ukulele, mandolin, harp, or piano/keyboard chords in the middle register. Leave the middle range empty so the live ukuleles stand out.
+- Use only bass, light percussion, and a simple high melody with long gaps. Keep everything soft and in the background.
+- INTRO: Bars 1-2 have NO chords and NO harmony — only a steady beat (percussion and a ticking sound) so the players can count "1, 2, 3, 4, 1, 2, 3, 4". End bar 2 with a small cue sound (one bell or cymbal swell). The first chord starts clearly on beat 1 of bar 3.
+- From bar 3, repeat the same 4-bar chord pattern until the end. Exactly one chord per bar. The bass plays the root note of each chord on beat 1 so the chord changes are very easy to hear.
+- Instrumental only, no vocals. Use ONLY these four chords: C, Am, F, G7 — no other chords. Steady tempo, no tempo or key changes. About 90 seconds. End on beat 1 of a bar with one short hit.
+```
+
+### 場面1　王女の城（コミカル＋不穏）
+イントロ2小節 → C｜Am｜F｜G7｜をくり返す（92BPM・1小節約2.6秒）
+```
+A comedic yet slightly sinister royal march for a spoiled, cruel princess. Playful on the surface, with a hint of something dark underneath. Instruments: tuba or pizzicato bass playing the root notes, light snare and woodblock, a cheeky bassoon or clarinet melody with long rests, and a low, quiet string note on the A minor bar for a touch of menace. 92 BPM, 4/4.
+Intro: 2 bars of only snare tap and woodblock tick, then a small bell hit at the end of bar 2.
+Chord pattern from bar 3 (one chord per bar, repeat): C | Am | F | G7 |
+```
+
+### 場面4　はんぶんこ（静かで真剣な対峙）
+イントロ2小節 → F｜G7｜C｜Am｜をくり返す（72BPM・1小節約3.3秒）
+```
+A quiet, serious scene: a cornered princess faces a lonely swordsman. Still and tense, with a hint of tenderness. Instruments: very soft low strings or cello holding the root note of each chord, a gentle heartbeat-like soft drum on beat 1, and a few high music-box or celesta notes with long gaps. Very sparse and calm. 72 BPM, 4/4.
+Intro: 2 bars of only a soft heartbeat drum on beats 1 and 3, then one soft chime at the end of bar 2.
+Chord pattern from bar 3 (one chord per bar, repeat): F | G7 | C | Am |
+```
