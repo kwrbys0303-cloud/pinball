@@ -130,3 +130,32 @@ A quiet, serious scene: a cornered princess faces a lonely swordsman. Still and 
 Intro: 2 bars of only a soft heartbeat drum on beats 1 and 3, then one soft chime at the end of bar 2.
 Chord pattern from bar 3 (one chord per bar, repeat): F | G7 | C | Am |
 ```
+
+---
+
+## 【10月9日 再追加】場面2・場面4　コードが聞き取りやすい版
+場面1・場面3はOK。場面2・4は「この小節は〇コードだ」とウクレレで合わせやすいことを最優先に作り直し。
+
+### 共通の一文（場面2・4の後ろにつける）
+```
+This is a backing track for a live ukulele group. The players must be able to hear clearly which chord is playing in every bar, so they can match it with confidence:
+- A soft sustained pad (strings or organ) plays the FULL chord (all three notes, plain triad) for the whole bar, every bar. The bass plays the root note on beat 1.
+- Every melody note must be a note of the current chord. No passing notes, no suspensions, no added 9ths, no sus chords, no extra 7ths except in G7.
+- Use ONLY these chords: C, Am, F, G7 (you do not have to use all four). Each chord lasts at least one full bar.
+- INTRO: Bars 1-2 have no chords — only a quiet ticking sound — and end with one soft chime. The first chord starts clearly on beat 1 of bar 3.
+- No guitar, no ukulele, no busy piano. Instrumental only, no vocals. Steady tempo, no key changes. About 90 seconds.
+```
+
+### 場面2　ひっそりと遭遇（戦いの前の静かな緊張）
+イントロ2小節 → Am｜Am｜F｜F｜Am｜Am｜G7｜G7｜をくり返す（66BPM・1小節約3.6秒）
+```
+A lonely swordsman quietly encounters enemy soldiers. Not a battle yet — a calm but tense moment of preparing the heart before a fight. Dark and quiet. Instruments: low sustained strings holding each chord, a soft deep bass note on beat 1, a faint high tremolo for tension. NO drums at all (a live bongo will play a slow heartbeat). 66 BPM, 4/4.
+Chord pattern from bar 3 (repeat): Am | Am | F | F | Am | Am | G7 | G7 |
+```
+
+### 場面4　はんぶんこ（静かで、ゆっくり）
+イントロ2小節 → C｜C｜Am｜Am｜F｜F｜G7｜G7｜をくり返す（56BPM・1小節約4.3秒）
+```
+A very quiet, slow, serious and tender scene: a cornered princess faces a lonely swordsman. Instruments: soft sustained strings holding each chord, a gentle low piano note on beat 1, a few slow high celesta notes using only chord tones. No drums. Calm, warm, unhurried. 56 BPM, 4/4.
+Chord pattern from bar 3 (repeat): C | C | Am | Am | F | F | G7 | G7 |
+```
